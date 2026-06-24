@@ -15,3 +15,10 @@ def build_destination(parsed):
         return f"{magazine}/{magazine} - Nr {issue}.pdf"
 
     return "_REVIEW"
+
+
+def get_status(destination):
+    if destination == "_REVIEW":
+        return "REVIEW"
+
+    return "OK"
