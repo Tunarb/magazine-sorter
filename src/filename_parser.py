@@ -24,6 +24,7 @@ def parse_filename(filename):
         "year": None,
         "month": None,
         "issue": None,
+        "week": None,
     }
 
     # Regel 1: Bil.Magasinet.2020.08.pdf
@@ -42,11 +43,13 @@ def parse_filename(filename):
 
     lower_filename = filename.lower()
 
-    # Regel 2: Familie.Journal.12.Maj...
+    # Regel 2: Månedsnavne
     for month_name, month_number in MONTHS.items():
         if month_name in lower_filename:
+
             result["month"] = month_number
 
+            # Familie.Journal.12.Maj...
             issue_match = re.search(r"(\d+)\." + month_name, lower_filename)
 
             if issue_match:
@@ -57,9 +60,35 @@ def parse_filename(filename):
 
                 result["magazine"] = magazine
 
+            # Euroman.Januar.2026.pdf
+            year_match = re.search(r"(20\d{2})", lower_filename)
+
+            if year_match:
+                result["year"] = int(year_match.group(1))
+
+            if not result["magazine"]:
+                magazine = lower_filename.split(month_name)[0]
+                magazine = magazine.replace(".", " ").strip().title()
+
+                result["magazine"] = magazine
+
             return result
 
-    # Regel 3: No.390.2024 eller Nr.06.2026
+    # Regel 3: Soendag.Uge.34.2024.pdf
+    week_match = re.search(r"uge\.(\d+)\.(20\d{2})", lower_filename)
+
+    if week_match:
+        result["week"] = int(week_match.group(1))
+        result["year"] = int(week_match.group(2))
+
+        magazine = lower_filename.split(week_match.group(0))[0]
+        magazine = magazine.replace(".", " ").strip().title()
+
+        result["magazine"] = magazine
+
+        return result
+
+    # Regel 4: No.390.2024 eller Nr.06.2026
     issue_match = re.search(r"(?:no|nr)\.(\d+)", lower_filename)
 
     if issue_match:
