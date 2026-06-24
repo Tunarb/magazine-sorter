@@ -1,3 +1,4 @@
+from filename_parser import parse_filename
 from config_loader import load_config
 from scanner import find_magazines
 
@@ -10,7 +11,8 @@ def main():
     print(f"Found {len(files)} magazine files")
 
     for file in files:
-        print(f"- {file.filename}")
+        parsed = parse_filename(file.filename)
+        print(parsed)
 
 
 if __name__ == "__main__":
