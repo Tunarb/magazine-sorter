@@ -44,6 +44,17 @@ def parse_filename(filename):
     for month_name, month_number in MONTHS.items():
         if month_name in lower_filename:
             result["month"] = month_number
+
+            issue_match = re.search(r"(\d+)\." + month_name, lower_filename)
+
+            if issue_match:
+                result["issue"] = int(issue_match.group(1))
+
+                magazine = lower_filename.split(issue_match.group(0))[0]
+                magazine = magazine.replace(".", " ").strip().title()
+
+                result["magazine"] = magazine
+
             break
 
     return result
