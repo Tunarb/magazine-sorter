@@ -10,14 +10,15 @@ def main():
     files = find_magazines(config["input_folder"])
 
     print(f"Found {len(files)} magazine files")
+    print()
 
     for file in files:
         parsed = parse_filename(file.filename)
         destination = build_destination(parsed)
 
+        print(file.filename)
+        print(f"→ {destination}")
         print()
-        print(parsed)
-        print(f"Destination: {destination}")
 
 
 if __name__ == "__main__":
