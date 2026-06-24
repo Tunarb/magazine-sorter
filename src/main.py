@@ -1,4 +1,5 @@
 from filename_parser import parse_filename
+from magazine_aliases import normalize_magazine_name
 from path_builder import build_destination, get_status
 from config_loader import load_config
 from scanner import find_magazines
@@ -14,6 +15,11 @@ def main():
 
     for file in files:
         parsed = parse_filename(file.filename)
+
+        if parsed["magazine"]:
+            parsed["magazine"] = normalize_magazine_name(
+                parsed["magazine"]
+            )
 
         destination = build_destination(parsed)
         status = get_status(destination)
