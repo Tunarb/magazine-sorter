@@ -26,6 +26,7 @@ def parse_filename(filename):
         "issue": None,
     }
 
+    # Regel 1: Bil.Magasinet.2020.08.pdf
     match = re.search(r"(\d{4})\.(\d{2})", filename)
 
     if match:
@@ -41,6 +42,7 @@ def parse_filename(filename):
 
     lower_filename = filename.lower()
 
+    # Regel 2: Familie.Journal.12.Maj...
     for month_name, month_number in MONTHS.items():
         if month_name in lower_filename:
             result["month"] = month_number
@@ -55,6 +57,24 @@ def parse_filename(filename):
 
                 result["magazine"] = magazine
 
-            break
+            return result
+
+    # Regel 3: No.390.2024 eller Nr.06.2026
+    issue_match = re.search(r"(?:no|nr)\.(\d+)", lower_filename)
+
+    if issue_match:
+        result["issue"] = int(issue_match.group(1))
+
+        year_match = re.search(r"\b(20\d{2})\b", lower_filename)
+
+        if year_match:
+            result["year"] = int(year_match.group(1))
+
+        magazine = lower_filename.split(issue_match.group(0))[0]
+        magazine = magazine.replace(".", " ").strip().title()
+
+        result["magazine"] = magazine
+
+        return result
 
     return result
