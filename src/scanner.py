@@ -22,6 +22,7 @@ def find_magazines(folder):
                     path=file,
                     filename=file.name,
                     extension=file.suffix.lower(),
+                    parent_folder=file.parent.name,
                 )
             )
 

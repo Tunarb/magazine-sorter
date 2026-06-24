@@ -7,3 +7,4 @@ class MagazineFile:
     path: Path
     filename: str
     extension: str
+    parent_folder: str = ""

@@ -20,6 +20,7 @@ def main():
 
         result = {
             "filename": file.filename,
+            "parent_folder": file.parent_folder,
             "destination": destination,
             "status": status,
         }
@@ -45,6 +46,7 @@ def main():
 
     for result in review_results:
         print(result["filename"])
+        print(f"Folder: {result['parent_folder']}")
         print(f"→ {result['destination']}")
         print()
 
