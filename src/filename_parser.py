@@ -21,11 +21,12 @@ def parse_filename(filename):
     result = {
         "filename": filename,
         "magazine": None,
+        "series": None,
         "year": None,
         "month": None,
         "issue": None,
         "week": None,
-    }
+}
 
     # Regel 1: Bil.Magasinet.2020.08.pdf
     match = re.search(r"(\d{4})\.(\d{2})", filename)
