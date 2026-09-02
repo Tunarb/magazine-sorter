@@ -6,8 +6,13 @@ def build_destination(parsed):
 
     year = parsed.get("year")
     month = parsed.get("month")
+    day = parsed.get("day")
     issue = parsed.get("issue")
     week = parsed.get("week")
+
+    # Dato-baserede blade
+    if year and month and day:
+        return f"{magazine}/{magazine} - {year}-{month:02d}-{day:02d}.pdf"
 
     # Månedsblade
     if year and month:
@@ -20,9 +25,15 @@ def build_destination(parsed):
     # Nummerbaserede blade
     if issue:
         if year:
-            return f"{magazine}/{magazine} - {year} - Nr {issue:02d}.pdf"
+            if isinstance(issue, int):
+                return f"{magazine}/{magazine} - {year} - Nr {issue:02d}.pdf"
 
-        return f"{magazine}/{magazine} - Nr {issue:02d}.pdf"
+            return f"{magazine}/{magazine} - {year} - Nr {issue}.pdf"
+
+        if isinstance(issue, int):
+            return f"{magazine}/{magazine} - Nr {issue:02d}.pdf"
+
+        return f"{magazine}/{magazine} - Nr {issue}.pdf"
 
     return "_REVIEW"
 

@@ -1,79 +1,89 @@
-from filename_parser import parse_filename
-from magazine_aliases import normalize_magazine_name
-from path_builder import build_destination, get_status
+from classifier import classify_file
+from path_builder import build_destination
 from config_loader import load_config
 from scanner import find_magazines
 
 
 def main():
     config = load_config()
-
     files = find_magazines(config["input_folder"])
 
-    ok_results = []
-    review_results = []
+    results = {
+        "AUTO": [],
+        "REVIEW": [],
+        "IGNORE": [],
+    }
 
     for file in files:
-        parsed = parse_filename(file.filename)
+        classification = classify_file(file.filename)
 
-        if parsed["magazine"]:
-            parsed["magazine"] = normalize_magazine_name(
-                parsed["magazine"]
-            )
+        destination = "_REVIEW"
 
-        destination = build_destination(parsed)
-        status = get_status(destination)
+        if classification["status"] == "AUTO":
+            parsed = {
+                "magazine": classification["publication"],
+                **classification["metadata"],
+            }
 
-        result = {
-            "filename": file.filename,
-            "parent_folder": file.parent_folder,
-            "destination": destination,
-            "status": status,
-        }
+            destination = build_destination(parsed)
 
-        if status == "OK":
-            ok_results.append(result)
-        else:
-            review_results.append(result)
+        results[classification["status"]].append(
+            {
+                "filename": file.filename,
+                "parent_folder": file.parent_folder,
+                "destination": destination,
+                "classification": classification,
+            }
+        )
 
-    print("OK FILES")
-    print("--------")
+    print("AUTO FILES")
+    print("==========")
     print()
 
-    for result in ok_results:
+    for result in results["AUTO"]:
         print(result["filename"])
-        print(f"→ {result['destination']}")
+        print(f"-> {result['destination']}")
         print()
 
     print()
     print("REVIEW FILES")
-    print("------------")
+    print("============")
     print()
 
-    for result in review_results:
+    for result in results["REVIEW"]:
+        classification = result["classification"]
+        metadata = classification["metadata"]
+
         print(result["filename"])
-        print(f"Folder: {result['parent_folder']}")
-        print(f"→ {result['destination']}")
+        print(f"publication: {classification['publication']}")
+        print(f"year:        {metadata['year']}")
+        print(f"month:       {metadata['month']}")
+        print(f"issue:       {metadata['issue']}")
+        print(f"week:        {metadata['week']}")
+        print(f"reason:      {classification['reason']}")
         print()
 
-    total_files = len(files)
-    ok_count = len(ok_results)
-    review_count = len(review_results)
+    print()
+    print("IGNORE FILES")
+    print("============")
+    print()
 
-    success_rate = 0
+    for result in results["IGNORE"]:
+        classification = result["classification"]
 
-    if total_files > 0:
-        success_rate = (ok_count / total_files) * 100
+        print(result["filename"])
+        print(f"reason: {classification['reason']}")
+        print()
 
     print()
     print("SUMMARY")
-    print("-------")
+    print("=======")
     print()
 
-    print(f"Files: {total_files}")
-    print(f"OK: {ok_count}")
-    print(f"REVIEW: {review_count}")
-    print(f"Success rate: {success_rate:.1f}%")
+    print(f"Files:  {len(files)}")
+    print(f"AUTO:   {len(results['AUTO'])}")
+    print(f"REVIEW: {len(results['REVIEW'])}")
+    print(f"IGNORE: {len(results['IGNORE'])}")
 
 
 if __name__ == "__main__":

@@ -14,16 +14,20 @@ def find_magazines(folder):
 
     files = []
 
-    for ext in SUPPORTED_EXTENSIONS:
-        for file in folder.glob(f"*{ext}"):
+    for file in folder.rglob("*"):
+        if not file.is_file():
+            continue
 
-            files.append(
-                MagazineFile(
-                    path=file,
-                    filename=file.name,
-                    extension=file.suffix.lower(),
-                    parent_folder=file.parent.name,
-                )
+        if file.suffix.lower() not in SUPPORTED_EXTENSIONS:
+            continue
+
+        files.append(
+            MagazineFile(
+                path=file,
+                filename=file.name,
+                extension=file.suffix.lower(),
+                parent_folder=file.parent.name,
             )
+        )
 
     return sorted(files, key=lambda x: x.filename.lower())

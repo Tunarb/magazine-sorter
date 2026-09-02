@@ -3,3 +3,19 @@ __pycache__/
 .venv/
 .vscode/
 sample_data/
+
+# Generated test / inventory data
+dry_run_report*.txt
+*_inventory.txt
+*_test.txt
+metadata_patterns.txt
+destination_paths.txt
+destination_test.txt
+publication_test.txt
+collision_test.txt
+dummy_data/
+temp dummy data/
+
+# Local backup files
+*.bak
+*.backup.py

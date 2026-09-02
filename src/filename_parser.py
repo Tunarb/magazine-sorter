@@ -1,6 +1,5 @@
 import re
 
-
 MONTHS = {
     "januar": 1,
     "februar": 2,
@@ -24,87 +23,131 @@ def parse_filename(filename):
         "series": None,
         "year": None,
         "month": None,
+        "day": None,
         "issue": None,
         "week": None,
-}
+    }
 
-    # Regel 1: Bil.Magasinet.2020.08.pdf
-    match = re.search(r"(\d{4})\.(\d{2})", filename)
+    lower_filename = filename.lower()
+
+    # Regel 1: År + måned som 2020.08
+    match = re.search(r"\b(20\d{2})\.(\d{1,2})\b", lower_filename)
 
     if match:
         result["year"] = int(match.group(1))
         result["month"] = int(match.group(2))
 
-        magazine = filename.split(match.group(0))[0]
+        magazine = filename[:match.start()]
         magazine = magazine.replace(".", " ").strip()
 
         result["magazine"] = magazine
-
         return result
 
-    lower_filename = filename.lower()
-
-    # Regel 2: Månedsnavne
-    for month_name, month_number in MONTHS.items():
-        if month_name in lower_filename:
-
-            result["month"] = month_number
-
-            # Familie.Journal.12.Maj...
-            issue_match = re.search(r"(\d+)\." + month_name, lower_filename)
-
-            if issue_match:
-                result["issue"] = int(issue_match.group(1))
-
-                magazine = lower_filename.split(issue_match.group(0))[0]
-                magazine = magazine.replace(".", " ").strip().title()
-
-                result["magazine"] = magazine
-
-            # Euroman.Januar.2026.pdf
-            year_match = re.search(r"(20\d{2})", lower_filename)
-
-            if year_match:
-                result["year"] = int(year_match.group(1))
-
-            if not result["magazine"]:
-                magazine = lower_filename.split(month_name)[0]
-                magazine = magazine.replace(".", " ").strip().title()
-
-                result["magazine"] = magazine
-
-            return result
-
-    # Regel 3: Soendag.Uge.34.2024.pdf
-    week_match = re.search(r"uge\.(\d+)\.(20\d{2})", lower_filename)
+    # Regel 2: Uge + år
+    # Eksempel: Uge.34.2024
+    week_match = re.search(
+        r"\buge\.(\d{1,2})\.(20\d{2})\b",
+        lower_filename,
+    )
 
     if week_match:
         result["week"] = int(week_match.group(1))
         result["year"] = int(week_match.group(2))
 
-        magazine = lower_filename.split(week_match.group(0))[0]
-        magazine = magazine.replace(".", " ").strip().title()
+        magazine = filename[:week_match.start()]
+        magazine = magazine.replace(".", " ").strip()
 
         result["magazine"] = magazine
-
         return result
 
-    # Regel 4: No.390.2024 eller Nr.06.2026
-    issue_match = re.search(r"(?:no|nr)\.(\d+)", lower_filename)
+    # Regel 3: Nr/No + nummer + dato
+    # Eksempel:
+    # Hjemmet.Nr.11.09.Marts.2026
+    # Gastro.Nr.231.05.Marts.2026
+    issue_date_match = re.search(
+        r"\b(?:nr|no)\.(\d+)\.(\d{1,2})\.("
+        + "|".join(MONTHS.keys())
+        + r")\.(20\d{2})\b",
+        lower_filename,
+    )
+
+    if issue_date_match:
+        result["issue"] = int(issue_date_match.group(1))
+        result["day"] = int(issue_date_match.group(2))
+        result["month"] = MONTHS[issue_date_match.group(3)]
+        result["year"] = int(issue_date_match.group(4))
+
+        magazine = filename[:issue_date_match.start()]
+        magazine = magazine.replace(".", " ").strip()
+
+        result["magazine"] = magazine
+        return result
+
+    # Regel 4: Dag + månedsnavn + år
+    # Eksempel:
+    # 7.TV-Dage.7.Juni.2025
+    # Billed-Bladet.12.Juni.2025
+    date_match = re.search(
+        r"\b(\d{1,2})\.("
+        + "|".join(MONTHS.keys())
+        + r")\.(20\d{2})\b",
+        lower_filename,
+    )
+
+    if date_match:
+        result["day"] = int(date_match.group(1))
+        result["month"] = MONTHS[date_match.group(2)]
+        result["year"] = int(date_match.group(3))
+
+        magazine = filename[:date_match.start()]
+        magazine = magazine.replace(".", " ").strip()
+
+        result["magazine"] = magazine
+        return result
+
+    # Regel 5: Månedsnavn + år
+    # Eksempel: Euroman.Januar.2026
+    month_date_match = re.search(
+        r"\b("
+        + "|".join(MONTHS.keys())
+        + r")\.(20\d{2})\b",
+        lower_filename,
+    )
+
+    if month_date_match:
+        result["month"] = MONTHS[month_date_match.group(1)]
+        result["year"] = int(month_date_match.group(2))
+
+        magazine = filename[:month_date_match.start()]
+        magazine = magazine.replace(".", " ").strip()
+
+        result["magazine"] = magazine
+        return result
+
+    # Regel 6: Nr/No + nummer + år
+    # Eksempel:
+    # Basserne.Nr.1244
+    # Hjemmet.Nr.11.2026
+    issue_match = re.search(
+        r"\b(?:nr|no)\.(\d+)",
+        lower_filename,
+    )
 
     if issue_match:
         result["issue"] = int(issue_match.group(1))
 
-        year_match = re.search(r"\b(20\d{2})\b", lower_filename)
+        year_match = re.search(
+            r"\b(20\d{2})\b",
+            lower_filename[issue_match.end():],
+        )
 
         if year_match:
             result["year"] = int(year_match.group(1))
 
-        magazine = lower_filename.split(issue_match.group(0))[0]
-        magazine = magazine.replace(".", " ").strip().title()
+        magazine = filename[:issue_match.start()]
+        magazine = magazine.replace(".", " ").strip()
 
         result["magazine"] = magazine
-
         return result
 
     return result
