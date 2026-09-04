@@ -19,3 +19,5 @@ temp dummy data/
 # Local backup files
 *.bak
 *.backup.py
+ocr_test_data/
+review_report.txt
