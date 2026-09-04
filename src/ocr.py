@@ -162,6 +162,79 @@ def ocr_pdf(
     return results
 
 
+def ocr_selected_pages(
+    pdf_path,
+    page_numbers,
+    language=DEFAULT_LANGUAGE,
+    dpi=DEFAULT_DPI,
+):
+    """
+    OCR'er specifikke sider af en PDF.
+
+    page_numbers er 1-baserede sidetal.
+
+    Returnerer en liste:
+        [
+            {
+                "page": 1,
+                "text": "...",
+            },
+            ...
+        ]
+    """
+    pdf_path = Path(pdf_path).resolve()
+
+    if not pdf_path.exists():
+        raise FileNotFoundError(f"PDF findes ikke: {pdf_path}")
+
+    with fitz.open(pdf_path) as document:
+        total_pages = len(document)
+
+    valid_pages = sorted(
+        {
+            page_number
+            for page_number in page_numbers
+            if 1 <= page_number <= total_pages
+        }
+    )
+
+    results = []
+
+    with tempfile.TemporaryDirectory(
+        prefix="magazine_sorter_ocr_"
+    ) as temp_dir:
+        temp_dir = Path(temp_dir)
+
+        for index, page_number in enumerate(valid_pages, start=1):
+            image_path = temp_dir / f"page_{page_number:03d}.png"
+
+            print(
+                f"OCR selected page {page_number} "
+                f"({index}/{len(valid_pages)})..."
+            )
+
+            render_page(
+                pdf_path,
+                page_number,
+                image_path,
+                dpi=dpi,
+            )
+
+            text = ocr_image(
+                image_path,
+                language=language,
+            )
+
+            results.append(
+                {
+                    "page": page_number,
+                    "text": text,
+                }
+            )
+
+    return results
+
+
 def main():
     test_pdf = (
         PROJECT_ROOT

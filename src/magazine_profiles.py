@@ -283,7 +283,7 @@ PUBLICATIONS = {
         "include_year": True,
     },
 
-    "Hjemmets beste mad": {
+    "Hjemmets bedste mad": {
         "aliases": [
             "Hjemmets.bedste.mad",
         ],
