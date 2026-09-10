@@ -1,7 +1,10 @@
 from pathlib import Path
 from collections import Counter
 
-from metadata_parser import parse_metadata
+try:
+    from .metadata_parser import parse_metadata
+except ImportError:
+    from metadata_parser import parse_metadata
 
 
 INVENTORY_FILE = Path("magazine_inventory.txt")

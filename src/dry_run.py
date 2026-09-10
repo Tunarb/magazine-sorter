@@ -3,9 +3,18 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from scanner import find_magazines
-from classifier import classify_file
-from path_builder import build_destination
+try:
+    from .scanner import find_magazines
+except ImportError:
+    from scanner import find_magazines
+try:
+    from .classifier import classify_file
+except ImportError:
+    from classifier import classify_file
+try:
+    from .path_builder import build_destination
+except ImportError:
+    from path_builder import build_destination
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -24,15 +33,20 @@ def get_destination(result):
     return build_destination(parsed)
 
 
-def main():
-    print("DRY RUN")
-    print("=======")
-    print()
-    print(f"Input:  {INPUT_FOLDER}")
-    print(f"Report: {REPORT_FILE}")
-    print()
+def run_dry_run(input_folder):
+    """
+    Run a complete dry-run without changing any files.
 
-    files = find_magazines(INPUT_FOLDER)
+    Returns a dictionary containing:
+    - files
+    - results
+    - collisions
+    - statistics
+    """
+
+    input_folder = Path(input_folder)
+
+    files = find_magazines(input_folder)
 
     results = {
         "AUTO": [],
@@ -68,37 +82,57 @@ def main():
         if len(filenames) > 1
     }
 
+    return {
+        "input_folder": str(input_folder),
+        "files": files,
+        "results": results,
+        "collisions": collisions,
+        "statistics": {
+            "files": len(files),
+            "auto": len(results["AUTO"]),
+            "review": len(results["REVIEW"]),
+            "ignore": len(results["IGNORE"]),
+            "unique_destinations": len(destinations),
+            "collisions": len(collisions),
+        },
+    }
+
+
+def write_report(run):
     lines = []
 
     lines.append("MAGAZINE SORTER - DRY RUN")
     lines.append("========================")
     lines.append("")
-    lines.append(f"Files found:        {len(files)}")
-    lines.append(f"AUTO:               {len(results['AUTO'])}")
-    lines.append(f"REVIEW:             {len(results['REVIEW'])}")
-    lines.append(f"IGNORE:             {len(results['IGNORE'])}")
-    lines.append(f"Unique destinations: {len(destinations)}")
-    lines.append(f"Collisions:         {len(collisions)}")
+    lines.append(f"Input:              {run['input_folder']}")
+    lines.append(f"Files found:        {run['statistics']['files']}")
+    lines.append(f"AUTO:               {run['statistics']['auto']}")
+    lines.append(f"REVIEW:             {run['statistics']['review']}")
+    lines.append(f"IGNORE:             {run['statistics']['ignore']}")
+    lines.append(
+        f"Unique destinations: "
+        f"{run['statistics']['unique_destinations']}"
+    )
+    lines.append(
+        f"Collisions:         "
+        f"{run['statistics']['collisions']}"
+    )
     lines.append("")
 
     lines.append("# AUTO FILES")
     lines.append("============")
     lines.append("")
 
-    for item in results["AUTO"]:
-        lines.append(
-            f"{item['filename']}"
-        )
-        lines.append(
-            f"-> {item['destination']}"
-        )
+    for item in run["results"]["AUTO"]:
+        lines.append(item["filename"])
+        lines.append(f"-> {item['destination']}")
         lines.append("")
 
     lines.append("# REVIEW FILES")
     lines.append("==============")
     lines.append("")
 
-    for item in results["REVIEW"]:
+    for item in run["results"]["REVIEW"]:
         result = item["result"]
         metadata = result["metadata"]
 
@@ -127,7 +161,7 @@ def main():
     lines.append("==============")
     lines.append("")
 
-    for item in results["IGNORE"]:
+    for item in run["results"]["IGNORE"]:
         result = item["result"]
 
         lines.append(item["filename"])
@@ -140,8 +174,8 @@ def main():
     lines.append("============")
     lines.append("")
 
-    if collisions:
-        for destination, filenames in collisions.items():
+    if run["collisions"]:
+        for destination, filenames in run["collisions"].items():
             lines.append(destination)
 
             for filename in filenames:
@@ -159,14 +193,37 @@ def main():
         encoding="utf-8",
     )
 
-    print(f"Files found:        {len(files)}")
-    print(f"AUTO:               {len(results['AUTO'])}")
-    print(f"REVIEW:             {len(results['REVIEW'])}")
-    print(f"IGNORE:             {len(results['IGNORE'])}")
-    print(f"Unique destinations: {len(destinations)}")
-    print(f"Collisions:         {len(collisions)}")
+
+def main():
+    print("DRY RUN")
+    print("=======")
     print()
-    print(f"Report written to:")
+
+    print(f"Input:  {INPUT_FOLDER}")
+    print(f"Report: {REPORT_FILE}")
+    print()
+
+    run = run_dry_run(INPUT_FOLDER)
+
+    write_report(run)
+
+    stats = run["statistics"]
+
+    print(f"Files found:        {stats['files']}")
+    print(f"AUTO:               {stats['auto']}")
+    print(f"REVIEW:             {stats['review']}")
+    print(f"IGNORE:             {stats['ignore']}")
+    print(
+        f"Unique destinations: "
+        f"{stats['unique_destinations']}"
+    )
+    print(
+        f"Collisions:         "
+        f"{stats['collisions']}"
+    )
+    print()
+
+    print("Report written to:")
     print(REPORT_FILE)
 
 

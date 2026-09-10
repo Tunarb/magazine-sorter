@@ -3,10 +3,22 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from classifier import classify_file
-from ocr import ocr_selected_pages
-from ocr_confidence import compare_metadata
-from ocr_metadata import parse_ocr_metadata
+try:
+    from .classifier import classify_file
+except ImportError:
+    from classifier import classify_file
+try:
+    from .ocr import ocr_selected_pages
+except ImportError:
+    from ocr import ocr_selected_pages
+try:
+    from .ocr_confidence import compare_metadata
+except ImportError:
+    from ocr_confidence import compare_metadata
+try:
+    from .ocr_metadata import parse_ocr_metadata
+except ImportError:
+    from ocr_metadata import parse_ocr_metadata
 
 
 OCR_LANGUAGE = "dan"

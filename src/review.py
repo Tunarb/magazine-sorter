@@ -3,8 +3,14 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from scanner import find_magazines
-from classifier import classify_file
+try:
+    from .scanner import find_magazines
+except ImportError:
+    from scanner import find_magazines
+try:
+    from .classifier import classify_file
+except ImportError:
+    from classifier import classify_file
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent

@@ -1,7 +1,10 @@
 from pathlib import Path
 from collections import Counter
 
-from magazine_profiles import PUBLICATIONS
+try:
+    from .magazine_profiles import PUBLICATIONS
+except ImportError:
+    from magazine_profiles import PUBLICATIONS
 
 
 INVENTORY_FILE = Path("magazine_inventory.txt")

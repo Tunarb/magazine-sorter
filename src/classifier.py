@@ -1,7 +1,13 @@
 from pathlib import Path
 
-from magazine_profiles import PUBLICATIONS
-from metadata_parser import parse_metadata
+try:
+    from .magazine_profiles import PUBLICATIONS
+except ImportError:
+    from magazine_profiles import PUBLICATIONS
+try:
+    from .metadata_parser import parse_metadata
+except ImportError:
+    from metadata_parser import parse_metadata
 
 INVENTORY_FILE = Path("magazine_inventory.txt")
 

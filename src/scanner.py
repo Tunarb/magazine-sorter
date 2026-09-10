@@ -1,6 +1,9 @@
 from pathlib import Path
 
-from models import MagazineFile
+try:
+    from .models import MagazineFile
+except ImportError:
+    from models import MagazineFile
 
 
 SUPPORTED_EXTENSIONS = [

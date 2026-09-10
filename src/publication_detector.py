@@ -1,4 +1,7 @@
-from magazine_profiles import PUBLICATIONS
+try:
+    from .magazine_profiles import PUBLICATIONS
+except ImportError:
+    from magazine_profiles import PUBLICATIONS
 
 
 def find_publication(filename):

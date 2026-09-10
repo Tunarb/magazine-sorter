@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}
+Dashboard - Magazine Sorter
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>
+            Dashboard
+        </h1>
+
+        <p>
+            Overview of the current magazine sorting run.
+        </p>
+
+    </div>
+
+</div>
+
+
+<section class="stats-grid">
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            AUTO
+        </div>
+
+        <div
+            class="stat-value"
+            data-stat="auto"
+        >
+            {{ stats.auto }}
+        </div>
+
+        <div class="stat-description">
+            Ready to organize
+        </div>
+
+    </div>
+
+
+    <div class="stat-card review">
+
+        <div class="stat-label">
+            REVIEW
+        </div>
+
+        <div
+            class="stat-value"
+            data-stat="review"
+        >
+            {{ stats.review }}
+        </div>
+
+        <div class="stat-description">
+            Needs your attention
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-label">
+            IGNORE
+        </div>
+
+        <div
+            class="stat-value"
+            data-stat="ignore"
+        >
+            {{ stats.ignore }}
+        </div>
+
+        <div class="stat-description">
+            Specials and excluded files
+        </div>
+
+    </div>
+
+
+    <div class="stat-card collision">
+
+        <div class="stat-label">
+            COLLISION
+        </div>
+
+        <div
+            class="stat-value"
+            data-stat="collision"
+        >
+            {{ stats.collision }}
+        </div>
+
+        <div class="stat-description">
+            Blocked for safety
+        </div>
+
+    </div>
+
+</section>
+
+
+<section class="panel">
+
+    <div class="panel-header">
+
+        <div>
+
+            <h2>
+                Dry Run Results
+            </h2>
+
+            <p>
+                Nothing will be moved or renamed.
+            </p>
+
+        </div>
+
+
+        <div class="panel-actions">
+
+            <button
+                class="button secondary report-button"
+                id="download-report-button"
+                disabled
+            >
+                Download Report
+            </button>
+
+            <select>
+
+                <option>
+                    All results
+                </option>
+
+                <option>
+                    AUTO
+                </option>
+
+                <option>
+                    REVIEW
+                </option>
+
+                <option>
+                    IGNORE
+                </option>
+
+                <option>
+                    COLLISION
+                </option>
+
+            </select>
+
+        </div>
+
+    </div>
+
+
+    <div id="results-container">
+
+        <div class="empty-state">
+
+            <div class="empty-icon">
+                ▤
+            </div>
+
+            <h3>
+                No dry-run results yet
+            </h3>
+
+            <p>
+                Run a dry run to see what
+                Magazine Sorter would do
+                with your files.
+            </p>
+
+            <button
+                class="button primary dry-run-button"
+            >
+                Start Dry Run
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}

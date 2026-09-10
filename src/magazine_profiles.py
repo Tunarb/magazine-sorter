@@ -119,12 +119,12 @@ PUBLICATIONS = {
         "include_year": True,
     },
 
-    "Bil Magasinet": {
+        'Bil Magasinet': {
         "aliases": [
-            "Bil.Magasinet",
-            "Bilmagasinet",
+        'Bil.Magasinet',
+        'Bilmagasinet'
         ],
-        "type": "date",
+        "type": 'issue',
         "include_year": True,
     },
 
@@ -549,4 +549,6 @@ PUBLICATIONS = {
         "type": "issue",
         "include_year": True,
     },
+
+    'Glad for MAD': {'aliases': ['Glad for MAD'], 'type': 'month', 'include_year': True},
 }

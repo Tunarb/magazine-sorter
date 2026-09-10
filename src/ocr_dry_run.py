@@ -7,8 +7,14 @@ SRC_DIR = Path(__file__).resolve().parent
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from ocr_classifier import analyze_file
-from path_builder import build_destination
+try:
+    from .ocr_classifier import analyze_file
+except ImportError:
+    from ocr_classifier import analyze_file
+try:
+    from .path_builder import build_destination
+except ImportError:
+    from path_builder import build_destination
 
 
 # ---------------------------------------------------------------------------

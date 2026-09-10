@@ -1,7 +1,19 @@
-from classifier import classify_file
-from path_builder import build_destination
-from config_loader import load_config
-from scanner import find_magazines
+try:
+    from .classifier import classify_file
+except ImportError:
+    from classifier import classify_file
+try:
+    from .path_builder import build_destination
+except ImportError:
+    from path_builder import build_destination
+try:
+    from .config_loader import load_config
+except ImportError:
+    from config_loader import load_config
+try:
+    from .scanner import find_magazines
+except ImportError:
+    from scanner import find_magazines
 
 
 def main():

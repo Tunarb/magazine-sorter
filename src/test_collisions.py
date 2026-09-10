@@ -4,8 +4,14 @@ from collections import defaultdict
 
 sys.path.insert(0, "src")
 
-from classifier import classify_file
-from path_builder import build_destination
+try:
+    from .classifier import classify_file
+except ImportError:
+    from classifier import classify_file
+try:
+    from .path_builder import build_destination
+except ImportError:
+    from path_builder import build_destination
 
 INVENTORY_FILE = Path("magazine_inventory.txt")
 

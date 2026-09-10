@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}
+Review - Magazine Sorter
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-header review-header">
+
+    <div>
+        <h1>Review</h1>
+
+        <p>
+            Review files that could not be safely identified automatically.
+        </p>
+    </div>
+
+    <div class="review-counter">
+        <strong id="review-count">
+            {{ review_count }}
+        </strong>
+
+        files waiting
+    </div>
+
+</div>
+
+
+<div class="review-layout">
+
+    <section class="review-list-panel">
+
+        <div class="panel-title">
+            Review queue
+        </div>
+
+        <div id="review-list">
+            <div class="loading">
+                Loading review queue...
+            </div>
+        </div>
+
+    </section>
+
+
+    <section class="review-detail-panel">
+
+        <div
+            id="review-detail"
+            class="review-empty"
+        >
+
+            <div class="empty-icon">
+                ◉
+            </div>
+
+            <h2>
+                Select a file
+            </h2>
+
+            <p>
+                Choose a file from the review queue
+                to inspect it.
+            </p>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}

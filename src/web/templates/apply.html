@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}
+Apply Changes - Magazine Sorter
+{% endblock %}
+
+{% block content %}
+<style>
+    .apply-page .warning-panel {
+        border: 1px solid #e3a008;
+        background: #fffaf0;
+    }
+    .apply-page .target-box {
+        background: #f6f8fb;
+        border: 1px solid #dce2ea;
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-top: 14px;
+    }
+    .apply-page .target-box code {
+        display: block;
+        margin-top: 5px;
+        overflow-wrap: anywhere;
+    }
+    .apply-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin: 18px 0;
+    }
+    .apply-summary-card {
+        border: 1px solid #dce2ea;
+        border-radius: 10px;
+        padding: 14px;
+        background: #fff;
+    }
+    .apply-summary-value {
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+    .apply-table-wrap {
+        overflow-x: auto;
+    }
+    .apply-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .apply-table th,
+    .apply-table td {
+        text-align: left;
+        padding: 10px 12px;
+        border-bottom: 1px solid #edf0f4;
+        vertical-align: top;
+    }
+    .apply-table th {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .apply-table code {
+        overflow-wrap: anywhere;
+    }
+    .apply-status-ready { color: #14804a; font-weight: 700; }
+    .apply-status-blocked { color: #c62828; font-weight: 700; }
+    .apply-status-applied { color: #53657a; font-weight: 700; }
+    .apply-confirm {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        margin: 20px 0;
+        padding: 14px 16px;
+        background: #f6f8fb;
+        border-radius: 10px;
+    }
+    .apply-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .apply-message {
+        margin-top: 14px;
+        font-weight: 600;
+    }
+    .apply-message.error { color: #c62828; }
+    .apply-message.success { color: #14804a; }
+    @media (max-width: 900px) {
+        .apply-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+</style>
+
+<div class="page-header apply-page">
+    <div>
+        <h1>Apply Changes</h1>
+        <p>Move the files that the latest Dry Run has safely classified.</p>
+    </div>
+</div>
+
+<section class="panel apply-page">
+    <div class="panel-header">
+        <div>
+            <h2>Safety check</h2>
+            <p>Nothing is moved until you explicitly confirm the operation.</p>
+        </div>
+    </div>
+
+    <div class="warning-panel" style="padding:16px;border-radius:10px;">
+        <strong>This is the first operation that changes files.</strong>
+        <div style="margin-top:6px;">
+            Only AUTO files from a completed Dry Run can be moved. REVIEW files
+            remain untouched for later processing. Errors and collisions block
+            the operation, and existing destination files are never overwritten.
+        </div>
+    </div>
+
+    <div class="target-box">
+        <div class="info-label">TARGET LIBRARY</div>
+        <code id="apply-output-folder">{{ output_folder }}</code>
+        <div style="margin-top:7px;color:#687789;font-size:13px;">
+            For Docker/Unraid this can be supplied with
+            <code>MAGAZINE_SORTER_OUTPUT_FOLDER</code>. Settings will manage
+            this path later; it is deliberately not persisted here yet.
+        </div>
+    </div>
+
+    <div id="apply-summary" class="apply-summary"></div>
+
+    <div id="apply-blocker" class="form-message" style="margin:16px 0;"></div>
+
+    <div class="apply-table-wrap">
+        <table class="apply-table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Source</th>
+                    <th>Destination</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody id="apply-items">
+                <tr><td colspan="4">Loading apply plan...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <form id="apply-form" action="/apply/execute" method="post">
+        <label id="apply-confirm-row" class="apply-confirm">
+            <input type="checkbox" id="apply-confirm" name="reviewed" required>
+            <input type="hidden" name="confirm" value="1">
+            <span>
+                I have reviewed the plan and understand that this will move the
+                READY files listed above. REVIEW files will remain untouched.
+                Existing files will not be overwritten.
+            </span>
+        </label>
+
+        <div class="apply-actions">
+            <button type="button" class="button secondary" id="apply-refresh">Refresh plan</button>
+            <button type="submit" class="button primary" id="apply-submit">Apply Changes</button>
+            <a class="button secondary" href="/">Back to Dashboard</a>
+        </div>
+    </form>
+
+    <script>
+    (function () {
+        "use strict";
+
+        async function loadApplyPlan() {
+            var itemsEl = document.getElementById("apply-items");
+            var summaryEl = document.getElementById("apply-summary");
+            var blockerEl = document.getElementById("apply-blocker");
+            var submitEl = document.getElementById("apply-submit");
+            var confirmEl = document.getElementById("apply-confirm");
+
+            itemsEl.innerHTML = '<tr><td colspan="4">Loading apply plan...</td></tr>';
+            blockerEl.textContent = "";
+            submitEl.disabled = true;
+
+            try {
+                var response = await fetch("/api/apply/plan", {
+                    method: "GET",
+                    cache: "no-store",
+                    headers: { "Accept": "application/json" }
+                });
+                var data = await response.json();
+
+                summaryEl.innerHTML =
+                    '<div class="apply-summary-card"><span>AUTO files</span><strong>' + (data.auto_count || 0) + '</strong></div>' +
+                    '<div class="apply-summary-card"><span>Ready</span><strong>' + (data.ready_count || 0) + '</strong></div>' +
+                    '<div class="apply-summary-card"><span>Blocked</span><strong>' + (data.blocked_count || 0) + '</strong></div>' +
+                    '<div class="apply-summary-card"><span>Already applied</span><strong>' + (data.applied_count || 0) + '</strong></div>';
+
+                var rows = data.items || [];
+                if (!rows.length) {
+                    itemsEl.innerHTML = '<tr><td colspan="4">No AUTO files in the current run.</td></tr>';
+                } else {
+                    itemsEl.innerHTML = rows.map(function (item) {
+                        var statusClass = item.status === "READY" ? "apply-status-ready" :
+                            (item.status === "BLOCKED" ? "apply-status-blocked" : "apply-status-applied");
+                        return '<tr>' +
+                            '<td class="' + statusClass + '">' + (item.status || "") + '</td>' +
+                            '<td><code>' + escapeHtml(item.source || "") + '</code></td>' +
+                            '<td><code>' + escapeHtml(item.destination || "") + '</code></td>' +
+                            '<td>' + escapeHtml(item.reason || "") + '</td>' +
+                            '</tr>';
+                    }).join("");
+                }
+
+                if (data.review_count) {
+                    blockerEl.textContent = data.review_count + " file(s) still need Review. They will remain untouched.";
+                    blockerEl.style.color = "#c62828";
+                }
+                if (data.reason && !data.ready) {
+                    blockerEl.textContent = data.reason;
+                    blockerEl.style.color = "#c62828";
+                }
+
+                submitEl.disabled = !data.ready || !confirmEl.checked;
+                confirmEl.onchange = function () {
+                    submitEl.disabled = !data.ready || !confirmEl.checked;
+                };
+            } catch (error) {
+                itemsEl.innerHTML = '<tr><td colspan="4">Could not load apply plan.</td></tr>';
+                blockerEl.textContent = "Could not load apply plan: " + error.message;
+                blockerEl.style.color = "#c62828";
+                submitEl.disabled = true;
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>\"]/g, function (char) {
+                return {"&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;"}[char];
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            var form = document.getElementById("apply-form");
+            var refresh = document.getElementById("apply-refresh");
+            var submit = document.getElementById("apply-submit");
+            var confirmEl = document.getElementById("apply-confirm");
+
+            refresh.addEventListener("click", loadApplyPlan);
+            form.addEventListener("submit", function (event) {
+                if (!confirmEl.checked) {
+                    event.preventDefault();
+                    return;
+                }
+                if (!window.confirm("Apply Changes will move the READY files to the target library. REVIEW files will remain untouched. Continue?")) {
+                    event.preventDefault();
+                    return;
+                }
+                submit.disabled = true;
+                submit.textContent = "Applying...";
+            });
+
+            loadApplyPlan();
+        });
+    }());
+    </script>
+
+    <div id="apply-message" class="apply-message">
+        {% if apply_result and apply_result.success %}
+            {{ apply_result.message }}
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
