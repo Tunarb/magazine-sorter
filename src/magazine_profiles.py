@@ -552,3 +552,58 @@ PUBLICATIONS = {
 
     'Glad for MAD': {'aliases': ['Glad for MAD'], 'type': 'month', 'include_year': True},
 }
+# User-edited publication profiles are persisted outside the source tree when
+# MAGAZINE_SORTER_DATA_DIR is configured (for example /config in Docker).
+# The built-in profiles above remain the baseline so future application
+# releases can add or improve profiles without being shadowed by old state.
+def _load_persistent_profiles():
+    import json
+    import os
+    from pathlib import Path
+
+    data_dir = Path(
+        os.getenv(
+            "MAGAZINE_SORTER_DATA_DIR",
+            str(Path(__file__).resolve().parent / "data"),
+        )
+    )
+    profile_file = data_dir / "publication_profiles.json"
+    if not profile_file.exists():
+        return
+
+    try:
+        saved = json.loads(profile_file.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return
+
+    if not isinstance(saved, dict):
+        return
+
+    for name in saved.get("removed", []):
+        if isinstance(name, str):
+            PUBLICATIONS.pop(name, None)
+
+    overrides = saved.get("overrides", {})
+    if not isinstance(overrides, dict):
+        return
+
+    for name, profile in overrides.items():
+        if not isinstance(name, str) or not isinstance(profile, dict):
+            continue
+        aliases = profile.get("aliases")
+        profile_type = profile.get("type")
+        include_year = profile.get("include_year")
+        if (
+            not isinstance(aliases, list)
+            or not all(isinstance(alias, str) and alias.strip() for alias in aliases)
+            or profile_type not in {"issue", "month", "date", "week"}
+        ):
+            continue
+        PUBLICATIONS[name] = {
+            "aliases": [alias.strip() for alias in aliases],
+            "type": profile_type,
+            "include_year": bool(include_year),
+        }
+
+
+_load_persistent_profiles()

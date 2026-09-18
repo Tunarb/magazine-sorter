@@ -91,11 +91,11 @@ The application stores persistent settings/runtime state separately from source 
 - `MAGAZINE_SORTER_OCR_IMAGE`
 - `MAGAZINE_SORTER_OCR_BACKEND`
 
-The web Settings page can manage paths unless an environment variable is being used as an override.
+The web Settings page can manage paths unless an environment variable is being used as an override. In Docker/Unraid, `/config` is the persistent application-data directory and should be mapped to the Unraid `appdata` share.
 
 ### OCR
 
-Danish OCR is supported through the configured OCR backend. The current development setup can use local Tesseract or the legacy Docker OCR fallback. Production Docker packaging is planned separately.
+Danish OCR is supported through the configured OCR backend. The production Docker image bundles Tesseract and Danish language data, so OCR does not require a second OCR container or access to the Docker socket.
 
 ## Local development
 
@@ -158,7 +158,21 @@ Komga metadata such as book numbers can be adjusted inside Komga after import wh
 
 ## Docker / Unraid
 
-Container packaging is intentionally kept separate from the development source cleanup. The planned deployment will persist application data outside the container image and expose input/output/data paths through container mappings and environment variables.
+The repository contains the production Docker packaging and an Unraid template. The container is intentionally self-contained: it includes the web application, Python dependencies and local Tesseract with Danish language data. It does not need the Docker socket or a second OCR container.
+
+The recommended container mappings are:
+
+```text
+Unraid appdata share       -> /config
+Magazine input folder      -> /input
+Komga library              -> /library
+```
+
+`/config` contains persistent settings, publication profiles, resumable Dry Run state, auto-run state and History. Publication profile edits are stored in `/config/publication_profiles.json` rather than modifying the application image.
+
+The container supports `PUID` and `PGID`; the default values are Unraid's conventional `99` and `100`. The input and library paths are exposed as separate mappings so the container can move files between them without granting access to unrelated shares.
+
+The Unraid template uses `ghcr.io/tunarb/magazine-sorter:latest`. The GitHub Actions workflow builds and publishes that image automatically from `main`.
 
 No user-specific Windows paths or development test data belong in the production image.
 

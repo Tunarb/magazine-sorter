@@ -1,0 +1,19 @@
+services:
+  magazine-sorter:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      TZ: Europe/Copenhagen
+      PUID: "99"
+      PGID: "100"
+      MAGAZINE_SORTER_INPUT_FOLDER: /input
+      MAGAZINE_SORTER_OUTPUT_FOLDER: /library
+      MAGAZINE_SORTER_DATA_DIR: /config
+      MAGAZINE_SORTER_OCR_BACKEND: local
+      MAGAZINE_SORTER_TESSDATA_DIR: /usr/share/tesseract-ocr/5/tessdata
+    volumes:
+      - ./docker-test/config:/config
+      - ./docker-test/input:/input
+      - ./docker-test/library:/library
+    restart: unless-stopped

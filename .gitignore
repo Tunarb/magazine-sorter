@@ -32,3 +32,5 @@ Thumbs.db
 *.backup
 *.tmp
 *.swp
+
+docker-test/

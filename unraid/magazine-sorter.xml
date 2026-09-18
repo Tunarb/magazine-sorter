@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Container version="2">
+  <Name>magazine-sorter</Name>
+  <Repository>ghcr.io/tunarb/magazine-sorter:latest</Repository>
+  <Registry>https://ghcr.io/</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/Tunarb/magazine-sorter</Support>
+  <Project>https://github.com/Tunarb/magazine-sorter</Project>
+  <Overview>Conservative magazine PDF organizer with Dry Run, Review, OCR, Apply, History and safe Undo.</Overview>
+  <Category>MediaApp:Tools:Other</Category>
+  <WebUI>http://[IP]:[PORT:8000]/</WebUI>
+  <Config Name="Web UI Port" Target="8000" Default="8000" Mode="tcp" Description="Magazine Sorter web interface." Type="Port" Display="always" Required="true" Mask="false">8000</Config>
+  <Config Name="Appdata" Target="/config" Default="/mnt/user/appdata/magazine-sorter" Mode="rw" Description="Persistent settings, publication profiles, Dry Run state and History." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/magazine-sorter</Config>
+  <Config Name="Input" Target="/input" Default="" Mode="rw" Description="Folder containing source magazines. The application uses /input internally." Type="Path" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="Library" Target="/library" Default="" Mode="rw" Description="Komga library destination. The application uses /library internally." Type="Path" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID used for file operations. Unraid default nobody is 99." Type="Variable" Display="advanced-hide" Required="true" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID used for file operations. Unraid default users group is 100." Type="Variable" Display="advanced-hide" Required="true" Mask="false">100</Config>
+  <Config Name="TZ" Target="TZ" Default="Europe/Copenhagen" Mode="" Description="Container timezone." Type="Variable" Display="advanced-hide" Required="true" Mask="false">Europe/Copenhagen</Config>
+  <Config Name="OCR backend" Target="MAGAZINE_SORTER_OCR_BACKEND" Default="local" Mode="" Description="Use the Tesseract installation bundled in the image." Type="Variable" Display="advanced-hide" Required="true" Mask="false">local</Config>
+</Container>

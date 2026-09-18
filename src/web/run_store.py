@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import os
 import uuid
 import time
 from datetime import datetime, timezone
@@ -10,7 +11,7 @@ from typing import Dict, Optional
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR = Path(os.getenv("MAGAZINE_SORTER_DATA_DIR", str(PROJECT_ROOT / "data")))
 RUN_DIR = DATA_DIR / "dry_run"
 HISTORY_DIR = DATA_DIR / "runs"
 CHECKPOINT_FILE = RUN_DIR / "current.json"
