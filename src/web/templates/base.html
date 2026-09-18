@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}
+        Magazine Sorter
+        {% endblock %}
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/static/style.css?v=undo-v2"
+    >
+
+</head>
+
+
+<body>
+
+<header class="topbar">
+
+    <div class="brand">
+
+        <div class="brand-icon">
+            M
+        </div>
+
+        <div>
+
+            <div class="brand-title">
+                Magazine Sorter
+            </div>
+
+            <div class="brand-subtitle">
+                PDF & CBZ organizer
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="topbar-actions">
+
+        <button
+            class="button primary dry-run-button"
+        >
+            Dry Run
+        </button>
+
+    </div>
+
+</header>
+
+
+<div class="layout">
+
+    <aside class="sidebar">
+
+        <nav>
+
+            <a
+                class="nav-item {% if request.url.path == '/' %}active{% endif %}"
+                href="/"
+            >
+                <span>▦</span>
+                Dashboard
+            </a>
+
+
+            <a
+                class="nav-item {% if request.url.path == '/review' %}active{% endif %}"
+                href="/review"
+            >
+                <span>◉</span>
+                Review
+            </a>
+
+
+            <a
+                class="nav-item {% if request.url.path == '/publications' %}active{% endif %}"
+                href="/publications"
+            >
+                <span>◎</span>
+                Publications
+            </a>
+
+
+            <a
+                class="nav-item {% if request.url.path == '/history' %}active{% endif %}"
+                href="/history"
+            >
+                <span>◷</span>
+                History
+            </a>
+
+
+            <a
+                class="nav-item"
+                href="/settings"
+            >
+                <span>⚙</span>
+                Settings
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-footer">
+
+            <div class="status-dot"></div>
+
+            Engine online
+
+        </div>
+
+    </aside>
+
+
+    <main class="content">
+
+        {% block content %}
+        {% endblock %}
+
+    </main>
+
+</div>
+
+
+<div
+    class="run-status-bar"
+    id="run-status-bar"
+>
+    <div class="run-status-main">
+        <span class="run-status-indicator"></span>
+
+        <strong id="run-status-text">
+            Idle
+        </strong>
+
+        <span
+            class="run-status-file"
+            id="run-status-file"
+        ></span>
+    </div>
+
+    <div class="run-status-progress">
+        <div
+            class="run-status-fill"
+            id="run-status-fill"
+        ></div>
+    </div>
+
+    <span
+        class="run-status-count"
+        id="run-status-count"
+    ></span>
+</div>
+
+
+<script src="/static/app.js?v=undo-v2"></script>
+
+</body>
+
+</html>

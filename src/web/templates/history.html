@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}
+History - Magazine Sorter
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header history-header">
+    <div>
+        <h1>Run History</h1>
+        <p>Review previous runs and safely re-run or undo selected files when the required conditions are met.</p>
+    </div>
+    <div class="history-counter">
+        <strong id="history-count">{{ history_count }}</strong>
+        runs
+    </div>
+</div>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Runs</h2>
+            <p>Each run keeps its own results, Review decisions and report. Re-runs always create a new history entry.</p>
+        </div>
+    </div>
+    <div id="history-list">
+        <div class="empty-state">Loading history...</div>
+    </div>
+</section>
+
+<section class="panel history-detail-panel" id="history-detail-panel" hidden>
+    <div class="panel-header">
+        <div>
+            <h2 id="history-detail-title">Run details</h2>
+            <p id="history-detail-subtitle"></p>
+        </div>
+        <div class="panel-actions">
+            <button class="button secondary" id="history-report-button">Download Report</button>
+        </div>
+    </div>
+    <div id="history-detail"></div>
+</section>
+
+{% endblock %}

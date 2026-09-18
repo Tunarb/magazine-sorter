@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}
+Publications - Magazine Sorter
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header publications-header">
+    <div>
+        <h1>Publications</h1>
+        <p>Teach Magazine Sorter about new magazines without changing its sorting logic.</p>
+    </div>
+
+    <button class="button primary" id="show-add-publication">
+        + Add Publication
+    </button>
+</div>
+
+<section class="panel learn-panel" id="edit-publication-panel" hidden>
+    <div class="panel-header">
+        <div>
+            <h2>Edit publication</h2>
+            <p>Change the profile used by the sorter. Existing files are not changed.</p>
+        </div>
+        <button class="button secondary" id="cancel-edit-publication">Cancel</button>
+    </div>
+
+    <div class="learn-grid">
+        <div class="form-field">
+            <label for="edit-publication-name">Publication name</label>
+            <input id="edit-publication-name" type="text" autocomplete="off">
+            <small>Changing the name affects future sorting only.</small>
+        </div>
+
+        <div class="form-field">
+            <label for="edit-publication-aliases">Filename aliases</label>
+            <input id="edit-publication-aliases" type="text" placeholder="Alias1, Alias2" autocomplete="off">
+            <small>Separate aliases with commas.</small>
+        </div>
+
+        <div class="form-field">
+            <label for="edit-publication-type">Release format</label>
+            <select id="edit-publication-type">
+                <option value="issue">Issue number + year</option>
+                <option value="month">Month + year</option>
+                <option value="date">Date + year</option>
+                <option value="week">Week number + year</option>
+            </select>
+        </div>
+
+        <label class="checkbox-field">
+            <input id="edit-publication-include-year" type="checkbox">
+            Include year in destination
+        </label>
+    </div>
+
+    <div class="profile-suggestion" id="edit-publication-summary">
+        Select a publication to edit.
+    </div>
+
+    <div class="learn-analyze-row">
+        <button class="button primary" id="save-edited-publication">Save changes</button>
+        <span id="edit-publication-message" class="form-message"></span>
+    </div>
+</section>
+
+<section class="panel learn-panel" id="add-publication-panel" hidden>
+    <div class="panel-header">
+        <div>
+            <h2>Learn a new publication</h2>
+            <p>Give me one real filename. I will use the existing parser to suggest how the publication is released.</p>
+        </div>
+        <button class="button secondary" id="cancel-add-publication">Cancel</button>
+    </div>
+
+    <div class="learn-grid">
+        <div class="form-field">
+            <label for="publication-name">Publication name</label>
+            <input id="publication-name" type="text" placeholder="e.g. Fotomagasinet" autocomplete="off">
+            <small>This is the name you want to see in the destination folder.</small>
+        </div>
+
+        <div class="form-field">
+            <label for="publication-filename">Example filename</label>
+            <input id="publication-filename" type="text" placeholder="Fotomagasinet.03.2026.pdf" autocomplete="off">
+            <small>Paste a real filename from the files you receive.</small>
+        </div>
+    </div>
+
+    <div class="learn-analyze-row">
+        <button class="button primary" id="analyze-publication">
+            Analyze filename
+        </button>
+        <span class="analyze-hint">Uses the same parser as the sorter.</span>
+    </div>
+
+    <div class="profile-suggestion" id="profile-suggestion">
+        Enter a publication name and example filename, then choose <strong>Analyze filename</strong>.
+    </div>
+
+    <div class="learn-confirm" id="learn-confirm" hidden>
+        <div class="learn-confirm-header">
+            <div>
+                <h3>Looks good?</h3>
+                <p>These settings will be added to the existing publication profiles.</p>
+            </div>
+            <span class="suggestion-confidence" id="suggestion-confidence"></span>
+        </div>
+
+        <div class="learn-preview-grid">
+            <div>
+                <span class="preview-label">Publication</span>
+                <strong id="preview-publication">—</strong>
+            </div>
+            <div>
+                <span class="preview-label">Filename alias</span>
+                <strong id="preview-alias">—</strong>
+            </div>
+            <div>
+                <span class="preview-label">Release format</span>
+                <strong id="preview-format">—</strong>
+            </div>
+            <div>
+                <span class="preview-label">Year in destination</span>
+                <strong id="preview-year">—</strong>
+            </div>
+        </div>
+
+        <div class="advanced-profile" id="advanced-profile">
+            <button class="advanced-toggle" type="button" id="advanced-profile-toggle">
+                Advanced settings ▸
+            </button>
+
+            <div class="advanced-fields" id="advanced-profile-fields" hidden>
+                <div class="form-field">
+                    <label for="publication-type">Release format</label>
+                    <select id="publication-type">
+                        <option value="issue">Issue number + year</option>
+                        <option value="month">Month + year</option>
+                        <option value="date">Date + year</option>
+                        <option value="week">Week number + year</option>
+                    </select>
+                </div>
+
+                <label class="checkbox-field">
+                    <input id="publication-include-year" type="checkbox" checked>
+                    Include year in destination
+                </label>
+            </div>
+        </div>
+
+        <div class="learn-actions">
+            <button class="button primary" id="save-publication">
+                Save &amp; Learn
+            </button>
+            <span class="form-message" id="publication-form-message"></span>
+        </div>
+    </div>
+</section>
+
+<section class="panel discovery-panel" id="publication-discovery">
+    <div class="panel-header">
+        <div>
+            <h2>Possible new publications</h2>
+            <p>After a Dry Run, Magazine Sorter can spot unknown files that share the same publication-name pattern.</p>
+        </div>
+        <span class="discovery-badge" id="discovery-count">Checking...</span>
+    </div>
+
+    <div id="publication-discovery-list" class="discovery-list">
+        <div class="loading-state">Looking for possible new publications...</div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header publication-list-header">
+        <div>
+            <h2>Known Publications</h2>
+            <p><span id="publication-count">0</span> profiles currently loaded by the sorter.</p>
+        </div>
+        <input class="publication-search" id="publication-search" type="search" placeholder="Search publications...">
+    </div>
+
+    <div id="publications-list" class="publications-list">
+        <div class="loading-state">Loading publications...</div>
+    </div>
+</section>
+
+{% endblock %}

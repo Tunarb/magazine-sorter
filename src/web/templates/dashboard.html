@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}
+Dashboard - Magazine Sorter
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header dashboard-header">
+    <div>
+        <div class="eyebrow">CURRENT RUN</div>
+        <h1>Dashboard</h1>
+        <p>See what Magazine Sorter plans to do, and what needs your attention.</p>
+    </div>
+    <div class="dashboard-run-badge" id="dashboard-run-badge">
+        <span class="dashboard-run-dot"></span>
+        <span id="dashboard-run-badge-text">No active run</span>
+    </div>
+</div>
+
+<section class="stats-grid dashboard-stats" aria-label="Current run status">
+    <button class="stat-card stat-card-clickable ready-card" data-status-filter="AUTO" type="button" aria-pressed="false">
+        <div class="stat-card-top">
+            <span class="stat-icon">✓</span>
+            <span class="stat-label">READY</span>
+                    </div>
+        <div class="stat-value" data-stat="auto">{{ stats.auto }}</div>
+        <div class="stat-description">Safe to organize</div>
+    </button>
+
+    <button class="stat-card review stat-card-clickable" data-status-filter="REVIEW" type="button" aria-pressed="false">
+        <div class="stat-card-top">
+            <span class="stat-icon">!</span>
+            <span class="stat-label">REVIEW</span>
+                    </div>
+        <div class="stat-value" data-stat="review">{{ stats.review }}</div>
+        <div class="stat-description">Needs your attention</div>
+    </button>
+
+    <button class="stat-card collision stat-card-clickable" data-status-filter="BLOCKED" type="button" aria-pressed="false">
+        <div class="stat-card-top">
+            <span class="stat-icon">×</span>
+            <span class="stat-label">BLOCKED</span>
+                    </div>
+        <div class="stat-value" data-stat="collision">{{ stats.collision }}</div>
+        <div class="stat-description">Blocked for safety</div>
+    </button>
+
+    <button class="stat-card stat-card-clickable ignore-card" data-status-filter="IGNORE" type="button" aria-pressed="false">
+        <div class="stat-card-top">
+            <span class="stat-icon">−</span>
+            <span class="stat-label">IGNORE</span>
+                    </div>
+        <div class="stat-value" data-stat="ignore">{{ stats.ignore }}</div>
+        <div class="stat-description">Excluded from organizing</div>
+    </button>
+</section>
+
+<div class="dashboard-error-alert" id="dashboard-error-alert" hidden>
+    <div class="dashboard-error-main">
+        <span class="dashboard-error-icon">!</span>
+        <div>
+            <strong><span id="dashboard-error-count">0</span> files could not be processed</strong>
+            <span>These files are excluded from Apply until the cause is resolved.</span>
+        </div>
+    </div>
+    <button class="button secondary button-small" id="dashboard-error-filter" type="button">View errors</button>
+</div>
+
+<section class="panel current-run-panel">
+    <div class="panel-header current-run-header">
+        <div>
+            <div class="eyebrow">DRY RUN RESULTS</div>
+            <h2>Before anything is changed</h2>
+            <p>Review the exact before → after plan. Nothing is moved or renamed until you apply it.</p>
+        </div>
+
+        <div class="panel-actions dashboard-panel-actions">
+            <div class="result-search-wrap">
+                <span class="result-search-icon" aria-hidden="true">⌕</span>
+                <input id="result-search" type="search" placeholder="Search files or publications…" autocomplete="off" aria-label="Search current run">
+            </div>
+            <select id="result-filter" aria-label="Filter results">
+                <option value="ALL">All files</option>
+                <option value="AUTO">Ready</option>
+                <option value="REVIEW">Review</option>
+                <option value="BLOCKED">Blocked</option>
+                <option value="IGNORE">Ignore</option>
+                <option value="ERROR">Errors</option>
+            </select>
+            <button class="button secondary report-button" id="download-report-button" disabled>Report</button>
+        </div>
+    </div>
+
+    <div class="current-run-summary" id="current-run-summary">
+        <div class="current-run-summary-main">
+            <span class="summary-count"><strong id="visible-result-count">0</strong> files</span>
+            <span class="summary-separator">·</span>
+            <span id="current-run-summary-text">Run a Dry Run to see the proposed changes.</span>
+        </div>
+        <button class="clear-dashboard-filter" id="clear-dashboard-filter" type="button" hidden>Clear filters</button>
+    </div>
+
+    <div id="results-container">
+        <div class="empty-state dashboard-empty-state">
+            <div class="empty-icon">▤</div>
+            <h3>No dry-run results yet</h3>
+            <p>Run a dry run to see what Magazine Sorter would do with your files.</p>
+            <button class="button primary dry-run-button">Start Dry Run</button>
+        </div>
+    </div>
+</section>
+
+<div class="inspect-backdrop" id="inspect-backdrop" hidden>
+    <aside class="inspect-panel" role="dialog" aria-modal="true" aria-labelledby="inspect-title">
+        <div class="inspect-panel-header">
+            <div>
+                <div class="eyebrow" id="inspect-status-label">INSPECT</div>
+                <h2 id="inspect-title">File details</h2>
+            </div>
+            <button class="icon-button" id="inspect-close" type="button" aria-label="Close inspect">×</button>
+        </div>
+        <div class="inspect-content" id="inspect-content"></div>
+    </aside>
+</div>
+
+{% endblock %}

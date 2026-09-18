@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Magazine Sorter{% endblock %}
+
+{% block content %}
+<div class="page-header settings-page-header">
+    <div>
+        <div class="eyebrow">CONFIGURATION</div>
+        <h1>Settings</h1>
+        <p>Configure where Magazine Sorter works, how it uses OCR, and how conservative automation should be.</p>
+    </div>
+    <div class="settings-header-badge">
+        <span class="settings-live-dot"></span>
+        v1 configuration
+    </div>
+</div>
+
+<section class="panel settings-panel settings-hero-panel">
+    <div class="settings-section-icon">⚙</div>
+    <div>
+        <h2>Designed for safe automation</h2>
+        <p>Every automatic run uses the same Dry Run, collision checks and Apply safety rules as the manual workflow. REVIEW files are never automatically moved.</p>
+    </div>
+</section>
+
+<section class="panel settings-panel">
+    <div class="panel-header">
+        <div><h2>Folders</h2><p>Your input queue and organized library.</p></div>
+    </div>
+    <div class="settings-grid">
+        <div class="form-field">
+            <label for="settings-input-folder">Input folder</label>
+            <input id="settings-input-folder" type="text" value="{{ settings.folders.input_folder }}" autocomplete="off" {% if env_managed.input_folder %}readonly{% endif %}>
+            <small>Files waiting to be scanned. Existing subfolders are included.</small>
+            {% if env_managed.input_folder %}<small class="settings-env-note">Managed by MAGAZINE_SORTER_INPUT_FOLDER.</small>{% endif %}
+        </div>
+        <div class="form-field">
+            <label for="settings-output-folder">Library / output folder</label>
+            <input id="settings-output-folder" type="text" value="{{ settings.folders.output_folder }}" autocomplete="off" {% if env_managed.output_folder %}readonly{% endif %}>
+            <small>Organized files are moved here. Existing files are never overwritten.</small>
+            {% if env_managed.output_folder %}<small class="settings-env-note">Managed by MAGAZINE_SORTER_OUTPUT_FOLDER.</small>{% endif %}
+        </div>
+    </div>
+    <div class="settings-actions">
+        <button class="button secondary" type="button" id="test-folders">Test folders</button>
+        <span class="form-message" id="folder-test-message"></span>
+    </div>
+    <div id="folder-test-results" class="settings-test-results" hidden></div>
+</section>
+
+<section class="panel settings-panel">
+    <div class="panel-header">
+        <div><h2>OCR</h2><p>Used only when filename classification cannot safely identify a file.</p></div>
+        <span class="settings-section-status">Optional analysis</span>
+    </div>
+    <label class="checkbox-field settings-checkbox">
+        <input id="settings-ocr-enabled" type="checkbox" {% if settings.ocr.enabled %}checked{% endif %}>
+        <span><strong>Use OCR during Dry Run</strong><small>If disabled, uncertain files remain in Review instead of being OCR-processed automatically.</small></span>
+    </label>
+    <div class="settings-grid">
+        <div class="form-field">
+            <label for="settings-ocr-language">OCR language</label>
+            <select id="settings-ocr-language">
+                {% for code, label in ocr_languages.items() %}<option value="{{ code }}" {% if settings.ocr.language == code %}selected{% endif %}>{{ label }} ({{ code }})</option>{% endfor %}
+            </select>
+            <small>Danish is currently installed and supported.</small>
+        </div>
+        <div class="form-field">
+            <label for="settings-ocr-dpi">OCR DPI</label>
+            <input id="settings-ocr-dpi" type="number" min="100" max="600" step="50" value="{{ settings.ocr.dpi }}">
+            <small>300 DPI is the recommended balance between recognition and speed.</small>
+        </div>
+        <div class="form-field settings-wide-field">
+            <label for="settings-ocr-stages">OCR stages</label>
+            <input id="settings-ocr-stages" type="text" value="{{ page_stages_text }}" autocomplete="off">
+            <small>Example: <strong>1 | 4, 5 | 11</strong>. Later stages run only when earlier stages are insufficient.</small>
+        </div>
+    </div>
+</section>
+
+<section class="panel settings-panel auto-run-panel">
+    <div class="panel-header auto-run-header">
+        <div>
+            <div class="eyebrow">AUTOMATION</div>
+            <h2>Auto Run</h2>
+            <p>Let Magazine Sorter check the input folder on a schedule. Start conservative, then increase automation only when you trust the results.</p>
+        </div>
+        <label class="switch-control" title="Enable scheduled processing">
+            <input id="settings-auto-enabled" type="checkbox" {% if settings.auto_run.enabled %}checked{% endif %}>
+            <span class="switch-slider"></span>
+            <span class="switch-label">Enabled</span>
+        </label>
+    </div>
+
+    <div class="auto-run-status-card" id="auto-run-status-card">
+        <div class="auto-run-status-main">
+            <div class="auto-run-status-icon">↻</div>
+            <div>
+                <strong id="auto-run-status-title">{% if settings.auto_run.enabled %}Scheduled{% else %}Disabled{% endif %}</strong>
+                <span id="auto-run-status-summary">{{ auto_run_summary }}</span>
+            </div>
+        </div>
+        <div class="auto-run-status-meta">
+            <div><span>Last run</span><strong id="auto-run-last">—</strong></div>
+            <div><span>Next run</span><strong id="auto-run-next">—</strong></div>
+            <button class="button secondary auto-run-now-button" type="button" id="auto-run-now">Run now</button>
+        </div>
+    </div>
+
+    <div class="auto-run-mode-grid">
+        <label class="auto-mode-card">
+            <input type="radio" name="auto-mode" value="dry_run" {% if settings.auto_run.mode == 'dry_run' %}checked{% endif %}>
+            <span class="auto-mode-content"><strong>Scheduled Dry Run</strong><small>Analyze automatically, but never move files. Best for a cautious setup.</small></span>
+        </label>
+        <label class="auto-mode-card safe">
+            <input type="radio" name="auto-mode" value="safe_apply" {% if settings.auto_run.mode == 'safe_apply' %}checked{% endif %}>
+            <span class="auto-mode-content"><strong>Scheduled Safe Apply</strong><small>Automatically move only files that are READY after all safety checks.</small></span>
+        </label>
+    </div>
+
+    <div class="settings-subsection">
+        <div class="settings-subsection-title">Schedule</div>
+        <div class="settings-grid auto-schedule-grid">
+            <div class="form-field settings-wide-field">
+                <label for="settings-auto-schedule">Schedule type</label>
+                <select id="settings-auto-schedule">
+                    <option value="daily" {% if settings.auto_run.schedule == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="weekly" {% if settings.auto_run.schedule == 'weekly' %}selected{% endif %}>Weekly</option>
+                    <option value="interval" {% if settings.auto_run.schedule == 'interval' %}selected{% endif %}>Every X hours</option>
+                </select>
+                <small id="auto-schedule-help">Choose when the automatic check should start.</small>
+            </div>
+            <div class="form-field" id="auto-time-field">
+                <label for="settings-auto-time">Time</label>
+                <input id="settings-auto-time" type="time" value="{{ settings.auto_run.time }}">
+            </div>
+            <div class="form-field" id="auto-weekday-field">
+                <label for="settings-auto-weekday">Day</label>
+                <select id="settings-auto-weekday">
+                    {% for value, label in weekdays %}<option value="{{ value }}" {% if settings.auto_run.weekday == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="form-field" id="auto-interval-field">
+                <label for="settings-auto-interval">Interval</label>
+                <div class="input-with-suffix"><input id="settings-auto-interval" type="number" min="6" max="168" step="1" value="{{ settings.auto_run.interval_hours }}"><span>hours</span></div>
+                <small>6–168 hours. Use this when you want a repeating interval instead of a fixed time.</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-subsection">
+        <div class="settings-subsection-title">Processing safeguards</div>
+        <div class="settings-grid">
+            <div class="form-field">
+                <label for="settings-auto-age">Minimum file age</label>
+                <div class="input-with-suffix"><input id="settings-auto-age" type="number" min="0" max="1440" step="1" value="{{ settings.auto_run.min_file_age_minutes }}"><span>minutes</span></div>
+                <small>Prevents files still being copied into the input folder from being picked up.</small>
+            </div>
+            <div class="form-field">
+                <label for="settings-auto-max">Maximum files per run</label>
+                <select id="settings-auto-max">
+                    {% for value, label in [(0, 'Unlimited'), (25, '25 files'), (50, '50 files'), (100, '100 files'), (250, '250 files'), (500, '500 files')] %}<option value="{{ value }}" {% if settings.auto_run.max_files_per_run == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+                <small>A cap limits the blast radius of an unexpected input batch.</small>
+            </div>
+        </div>
+        <label class="checkbox-field settings-checkbox compact-setting">
+            <input id="settings-auto-startup" type="checkbox" {% if settings.auto_run.run_on_startup %}checked{% endif %}>
+            <span><strong>Run once when the container starts</strong><small>Useful on Docker/Unraid when new files may arrive while Magazine Sorter is stopped.</small></span>
+        </label>
+        <label class="checkbox-field settings-checkbox compact-setting">
+            <input id="settings-auto-skip" type="checkbox" {% if settings.auto_run.skip_unchanged %}checked{% endif %}>
+            <span><strong>Skip unchanged files already seen by Auto Run</strong><small>Prevents the same unresolved REVIEW file from being OCR-processed again and again. Manual Dry Run can still inspect everything.</small></span>
+        </label>
+    </div>
+
+    <div class="auto-safety-grid">
+        <div><span>✓</span><strong>READY only</strong><small>Safe Apply can move only files that pass the existing Apply checks.</small></div>
+        <div><span>✓</span><strong>REVIEW stays put</strong><small>Uncertain files are never auto-approved or moved.</small></div>
+        <div><span>✓</span><strong>No overwrite</strong><small>Existing destinations remain blocked.</small></div>
+        <div><span>✓</span><strong>Collisions stay blocked</strong><small>A collision affects only the affected file.</small></div>
+    </div>
+</section>
+
+<section class="panel settings-panel">
+    <div class="panel-header">
+        <div><h2>Processing</h2><p>These are enforced workflow rules, not optional switches.</p></div>
+    </div>
+    <label class="checkbox-field settings-checkbox enforced-setting">
+        <input type="checkbox" checked disabled>
+        <span><strong>Dry Run before Apply</strong><small>Analysis always happens before files can be moved.</small></span>
+    </label>
+</section>
+
+<section class="panel settings-panel">
+    <div class="panel-header">
+        <div><h2>Safety</h2><p>These protections are enforced by the application and cannot be disabled.</p></div>
+    </div>
+    <div class="settings-safety-list">
+        <label class="checkbox-field enforced-setting"><input type="checkbox" checked disabled><span><strong>Never overwrite existing files</strong><small>An existing destination always blocks that file.</small></span></label>
+        <label class="checkbox-field enforced-setting"><input type="checkbox" checked disabled><span><strong>Never automatically move REVIEW files</strong><small>Uncertain files stay untouched until a human approves or ignores them.</small></span></label>
+        <label class="checkbox-field enforced-setting"><input type="checkbox" checked disabled><span><strong>Collision protection</strong><small>Two files targeting the same destination are never silently merged or overwritten.</small></span></label>
+    </div>
+</section>
+
+<div class="settings-bottom-actions">
+    <button class="button secondary" type="button" id="reset-settings">Restore recommended defaults</button>
+    <div class="settings-save-area"><span class="form-message" id="settings-message"></span><button class="button primary" type="button" id="save-settings">Save Settings</button></div>
+</div>
+
+<script>
+(function () {
+    "use strict";
+    var saveButton = document.getElementById("save-settings");
+    var resetButton = document.getElementById("reset-settings");
+    var testButton = document.getElementById("test-folders");
+    var message = document.getElementById("settings-message");
+    var folderMessage = document.getElementById("folder-test-message");
+    var folderResults = document.getElementById("folder-test-results");
+
+    function setMessage(element, text, ok) {
+        element.textContent = text || "";
+        element.classList.toggle("success-message", !!ok);
+        element.classList.toggle("error-message", ok === false);
+    }
+
+    function selectedMode() {
+        var checked = document.querySelector('input[name="auto-mode"]:checked');
+        return checked ? checked.value : "dry_run";
+    }
+
+    function getPayload() {
+        return {
+            folders: {
+                input_folder: document.getElementById("settings-input-folder").value.trim(),
+                output_folder: document.getElementById("settings-output-folder").value.trim()
+            },
+            ocr: {
+                enabled: document.getElementById("settings-ocr-enabled").checked,
+                language: document.getElementById("settings-ocr-language").value,
+                dpi: Number(document.getElementById("settings-ocr-dpi").value),
+                page_stages: document.getElementById("settings-ocr-stages").value.trim()
+            },
+            auto_run: {
+                enabled: document.getElementById("settings-auto-enabled").checked,
+                mode: selectedMode(),
+                schedule: document.getElementById("settings-auto-schedule").value,
+                time: document.getElementById("settings-auto-time").value,
+                weekday: Number(document.getElementById("settings-auto-weekday").value),
+                interval_hours: Number(document.getElementById("settings-auto-interval").value),
+                min_file_age_minutes: Number(document.getElementById("settings-auto-age").value),
+                run_on_startup: document.getElementById("settings-auto-startup").checked,
+                max_files_per_run: Number(document.getElementById("settings-auto-max").value),
+                skip_unchanged: document.getElementById("settings-auto-skip").checked
+            }
+        };
+    }
+
+    function setControls(settings, pageStagesText) {
+        document.getElementById("settings-input-folder").value = settings.folders.input_folder;
+        document.getElementById("settings-output-folder").value = settings.folders.output_folder;
+        document.getElementById("settings-ocr-enabled").checked = !!settings.ocr.enabled;
+        document.getElementById("settings-ocr-language").value = settings.ocr.language;
+        document.getElementById("settings-ocr-dpi").value = settings.ocr.dpi;
+        document.getElementById("settings-ocr-stages").value = pageStagesText;
+        var a = settings.auto_run || {};
+        document.getElementById("settings-auto-enabled").checked = !!a.enabled;
+        document.querySelectorAll('input[name="auto-mode"]').forEach(function (el) { el.checked = el.value === (a.mode || "dry_run"); });
+        document.getElementById("settings-auto-schedule").value = a.schedule || "daily";
+        document.getElementById("settings-auto-time").value = a.time || "03:00";
+        document.getElementById("settings-auto-weekday").value = a.weekday == null ? 0 : a.weekday;
+        document.getElementById("settings-auto-interval").value = a.interval_hours || 24;
+        document.getElementById("settings-auto-age").value = a.min_file_age_minutes == null ? 5 : a.min_file_age_minutes;
+        document.getElementById("settings-auto-startup").checked = !!a.run_on_startup;
+        document.getElementById("settings-auto-max").value = a.max_files_per_run == null ? 0 : a.max_files_per_run;
+        document.getElementById("settings-auto-skip").checked = a.skip_unchanged !== false;
+        updateScheduleFields();
+    }
+
+    function updateScheduleFields() {
+        var schedule = document.getElementById("settings-auto-schedule").value;
+        var timeField = document.getElementById("auto-time-field");
+        var weekdayField = document.getElementById("auto-weekday-field");
+        var intervalField = document.getElementById("auto-interval-field");
+        var help = document.getElementById("auto-schedule-help");
+
+        timeField.hidden = schedule === "interval";
+        weekdayField.hidden = schedule !== "weekly";
+        intervalField.hidden = schedule !== "interval";
+
+        if (schedule === "daily") {
+            help.textContent = "Runs every day at the selected time.";
+        } else if (schedule === "weekly") {
+            help.textContent = "Runs once a week on the selected day and time.";
+        } else {
+            help.textContent = "Runs again after the selected number of hours. Day and time are not used.";
+        }
+    }
+
+    async function refreshAutoStatus() {
+        try {
+            var response = await fetch("/api/auto-run/status", { headers: { "Accept": "application/json" } });
+            if (!response.ok) return;
+            var data = await response.json();
+            var runtime = data.runtime || {};
+            document.getElementById("auto-run-status-title").textContent = runtime.phase || (data.settings.enabled ? "Scheduled" : "Disabled");
+            document.getElementById("auto-run-status-summary").textContent = data.summary || "";
+            document.getElementById("auto-run-last").textContent = runtime.last_finished_at ? new Date(runtime.last_finished_at).toLocaleString() : "—";
+            document.getElementById("auto-run-next").textContent = runtime.next_run_at ? new Date(runtime.next_run_at).toLocaleString() : "—";
+        } catch (error) {}
+    }
+
+    async function runAutoNow() {
+        var button = document.getElementById("auto-run-now");
+        button.disabled = true;
+        setMessage(message, "Starting Auto Run...", null);
+        try {
+            var response = await fetch("/api/auto-run/run-now", { method: "POST", headers: { "Accept": "application/json" } });
+            var data = await response.json();
+            if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+            setMessage(message, data.message || "Auto Run started.", true);
+            refreshAutoStatus();
+        } catch (error) {
+            setMessage(message, "Could not start Auto Run: " + error.message, false);
+        } finally {
+            setTimeout(function () { button.disabled = false; }, 1500);
+        }
+    }
+
+    async function saveSettings() {
+        saveButton.disabled = true;
+        setMessage(message, "Saving settings...", null);
+        try {
+            var response = await fetch("/api/settings", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(getPayload()) });
+            var data = await response.json();
+            if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+            setControls(data.settings, data.page_stages_text);
+            setMessage(message, data.message, true);
+            setTimeout(refreshAutoStatus, 100);
+        } catch (error) {
+            setMessage(message, "Could not save settings: " + error.message, false);
+        } finally { saveButton.disabled = false; }
+    }
+
+    async function testFolders() {
+        testButton.disabled = true;
+        setMessage(folderMessage, "Testing folders...", null);
+        folderResults.hidden = false;
+        folderResults.innerHTML = "";
+        try {
+            var payload = getPayload();
+            var response = await fetch("/api/settings/test-folders", { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify({ folders: payload.folders }) });
+            var data = await response.json();
+            if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+            folderResults.innerHTML = data.checks.map(function (check) { return '<div class="settings-test-line ' + (check.ok ? 'test-ok' : 'test-fail') + '"><span>' + (check.ok ? '✓' : '✕') + '</span><span>' + escapeHtml(check.message) + '</span></div>'; }).join("");
+            setMessage(folderMessage, data.ok ? "All folder checks passed." : "One or more folder checks failed.", data.ok);
+        } catch (error) { setMessage(folderMessage, "Could not test folders: " + error.message, false); }
+        finally { testButton.disabled = false; }
+    }
+
+    async function resetSettings() {
+        if (!window.confirm("Restore the recommended Magazine Sorter settings?")) return;
+        resetButton.disabled = true;
+        setMessage(message, "Restoring defaults...", null);
+        try {
+            var response = await fetch("/api/settings/reset", { method: "POST", headers: { "Accept": "application/json" } });
+            var data = await response.json();
+            if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+            setControls(data.settings, data.page_stages_text);
+            setMessage(message, data.message, true);
+            setTimeout(refreshAutoStatus, 100);
+        } catch (error) { setMessage(message, "Could not restore defaults: " + error.message, false); }
+        finally { resetButton.disabled = false; }
+    }
+
+    function escapeHtml(value) { return String(value).replace(/[&<>\"]/g, function (char) { return {"&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;"}[char]; }); }
+
+    document.getElementById("settings-auto-schedule").addEventListener("change", updateScheduleFields);
+    saveButton.addEventListener("click", saveSettings);
+    resetButton.addEventListener("click", resetSettings);
+    testButton.addEventListener("click", testFolders);
+    document.getElementById("auto-run-now").addEventListener("click", runAutoNow);
+    updateScheduleFields();
+    refreshAutoStatus();
+    setInterval(refreshAutoStatus, 15000);
+}());
+</script>
+{% endblock %}
