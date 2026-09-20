@@ -20,6 +20,7 @@ ocr_test_data/
 dummy_data/
 library/
 *.txt
+!requirements.txt
 
 # Local editor / OS files
 .vscode/
