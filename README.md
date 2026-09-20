@@ -166,9 +166,36 @@ Komga metadata such as book numbers can be adjusted inside Komga after import wh
 
 ## Docker / Unraid
 
-The repository contains the production Docker packaging and an Unraid template. The project is released as an open-source application so others can use it, inspect the implementation, and contribute improvements. The container is intentionally self-contained: it includes the web application, Python dependencies and local Tesseract with Danish language data. It does not need the Docker socket or a second OCR container.
+### Install from the GitHub template
 
-The recommended container mappings are:
+Magazine Sorter can be installed on Unraid without using Community Applications. The project maintains its own Docker template in this repository.
+
+In **Apps → Add Container**, add the GitHub repository as a custom template repository:
+
+```text
+https://github.com/Tunarb/magazine-sorter
+```
+
+Then select **Magazine Sorter** from the available templates. Unraid loads the XML template and pre-fills the container settings.
+
+The template includes the project icon, WebUI action and the production image:
+
+```text
+ghcr.io/tunarb/magazine-sorter:latest
+```
+
+The template provides sensible defaults for the container-side settings:
+
+- `PUID=99` — Unraid's conventional `nobody` user
+- `PGID=100` — Unraid's conventional `users` group
+- `TZ=Europe/Copenhagen` — change if your server uses another timezone
+- OCR backend `local` — uses the Tesseract installation bundled in the image
+- container port `8000`
+- persistent `/config` mapping
+
+The **Input** and **Library** host paths are intentionally left for the installer to choose, because these locations differ between Unraid installations.
+
+Recommended mappings are:
 
 ```text
 Unraid appdata share       -> /config
@@ -178,9 +205,11 @@ Komga library              -> /library
 
 `/config` contains persistent settings, publication profiles, resumable Dry Run state, auto-run state and History. Publication profile edits are stored in `/config/publication_profiles.json` rather than modifying the application image.
 
-The container supports `PUID` and `PGID`; the default values are Unraid's conventional `99` and `100`. The input and library paths are exposed as separate mappings so the container can move files between them without granting access to unrelated shares.
+The input and library paths should be separate host folders. The application uses them as the source and destination of file moves.
 
-The Unraid template uses `ghcr.io/tunarb/magazine-sorter:latest`. The GitHub Actions workflow builds and publishes that image automatically from `main`.
+The container is intentionally self-contained: it includes the web application, Python dependencies and local Tesseract with Danish language data. It does not need the Docker socket or a second OCR container.
+
+The GitHub Actions workflow builds and publishes the GHCR image automatically from `main`.
 
 No user-specific Windows paths or development test data belong in the production image.
 
