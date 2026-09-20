@@ -23,5 +23,6 @@ else
 fi
 
 mkdir -p /config
+chown -R "$PUID:$PGID" /config
 
 exec gosu "$PUID:$PGID" python -m uvicorn src.web.app:app --host 0.0.0.0 --port 8000
