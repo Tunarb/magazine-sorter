@@ -1,5 +1,9 @@
 # Magazine Sorter
 
+<p align="center">
+  <img src="src/web/static/magazine-sorter.png" alt="Magazine Sorter" width="180">
+</p>
+
 > **AI-assisted development**
 >
 > Magazine Sorter was developed with substantial assistance from AI (OpenAI/ChatGPT). The code and design have been tested and reviewed by the author, who is responsible for the project and its maintenance.
