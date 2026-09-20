@@ -1,5 +1,9 @@
 # Magazine Sorter
 
+> **AI-assisted development**
+>
+> Magazine Sorter was developed with substantial assistance from AI (OpenAI/ChatGPT). The code and design have been tested and reviewed by the author, who is responsible for the project and its maintenance.
+
 Magazine Sorter is a conservative PDF/CBZ organizer designed for magazine libraries. It analyzes filenames first, uses OCR when configured for uncertain cases, presents ambiguous files for manual review, and only moves files after an explicit Apply step.
 
 The project is designed to work well with **Komga** without trying to configure Komga itself.
@@ -158,7 +162,7 @@ Komga metadata such as book numbers can be adjusted inside Komga after import wh
 
 ## Docker / Unraid
 
-The repository contains the production Docker packaging and an Unraid template. The container is intentionally self-contained: it includes the web application, Python dependencies and local Tesseract with Danish language data. It does not need the Docker socket or a second OCR container.
+The repository contains the production Docker packaging and an Unraid template. The project is released as an open-source application so others can use it, inspect the implementation, and contribute improvements. The container is intentionally self-contained: it includes the web application, Python dependencies and local Tesseract with Danish language data. It does not need the Docker socket or a second OCR container.
 
 The recommended container mappings are:
 
@@ -175,6 +179,14 @@ The container supports `PUID` and `PGID`; the default values are Unraid's conven
 The Unraid template uses `ghcr.io/tunarb/magazine-sorter:latest`. The GitHub Actions workflow builds and publishes that image automatically from `main`.
 
 No user-specific Windows paths or development test data belong in the production image.
+
+## Contributing
+
+Issues, bug reports, documentation improvements and pull requests are welcome. Please keep the project's conservative safety model intact: do not introduce silent overwrites, destructive automatic decisions, or behavior that turns uncertain classifications into guesses.
+
+## License
+
+Magazine Sorter is released under the **MIT License**. See `LICENSE` for the full license text.
 
 ## Design principles
 
