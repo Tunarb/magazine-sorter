@@ -42,17 +42,16 @@ body {
     width: 36px;
     height: 36px;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
+    flex: 0 0 36px;
+    overflow: hidden;
     border-radius: 8px;
+}
 
-    background: #4f7cff;
-    color: white;
-
-    font-weight: 700;
-    font-size: 18px;
+.brand-icon img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 
@@ -1971,10 +1970,6 @@ body {
     color: #64748b;
 }
 
-.history-availability.undo-warning {
-    color: #b45309;
-}
-
 .history-events {
     display: grid;
     gap: 0;
@@ -2270,120 +2265,6 @@ body {
 }
 .history-availability.undo-safe {
     color: #2563eb;
-}
-
-.history-undo-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 2200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background: rgba(15, 23, 42, .42);
-}
-.history-undo-dialog {
-    width: min(760px, 100%);
-    max-height: min(760px, calc(100vh - 48px));
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    background: #fff;
-    border: 1px solid #d7dee7;
-    border-radius: 12px;
-    box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
-}
-.history-undo-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 20px 22px 14px;
-    border-bottom: 1px solid #e5eaf0;
-}
-.history-undo-header h3 {
-    margin: 0;
-    font-size: 20px;
-}
-.history-undo-close {
-    border: 0;
-    background: transparent;
-    color: #64748b;
-    font-size: 28px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0 4px;
-}
-.history-undo-summary {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    padding: 14px 22px;
-}
-.history-undo-count {
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: #f8fafc;
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-.history-undo-count.ready { background: #f0fdf4; color: #047857; }
-.history-undo-count.blocked { background: #fff7ed; color: #b45309; }
-.history-undo-count strong { font-size: 18px; }
-.history-undo-count span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-.history-undo-list {
-    overflow: auto;
-    padding: 0 22px 8px;
-}
-.history-undo-item {
-    display: grid;
-    grid-template-columns: 72px minmax(160px, 1fr) minmax(220px, 1.4fr);
-    gap: 12px;
-    align-items: center;
-    padding: 9px 0;
-    border-top: 1px solid #eef2f6;
-    font-size: 12px;
-}
-.history-undo-item-status {
-    font-size: 10px;
-    font-weight: 800;
-}
-.history-undo-item.ready .history-undo-item-status { color: #047857; }
-.history-undo-item.blocked .history-undo-item-status { color: #dc2626; }
-.history-undo-item-name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 700;
-}
-.history-undo-item-path {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: #64748b;
-}
-.history-undo-warning {
-    margin: 8px 22px 0;
-    padding: 10px 12px;
-    border-radius: 7px;
-    background: #f8fafc;
-    color: #64748b;
-    font-size: 12px;
-}
-.history-undo-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 16px 22px 20px;
-}
-@media (max-width: 760px) {
-    .history-undo-modal { padding: 12px; }
-    .history-undo-dialog { max-height: calc(100vh - 24px); }
-    .history-undo-item { grid-template-columns: 72px 1fr; }
-    .history-undo-item-path { grid-column: 2; }
 }
 
 /* Settings v8 + refined navigation */
@@ -2911,7 +2792,7 @@ body.inspect-open {
 
 .inspect-backdrop {
     position: fixed;
-    inset: 0;
+    inset: 0 0 42px 0;
     z-index: 100;
     display: flex;
     justify-content: flex-end;
@@ -3072,9 +2953,15 @@ body.inspect-open {
 
 .inspect-footer {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
     gap: 9px;
-    margin-top: 24px;
+    flex: 0 0 auto;
+    min-height: 68px;
+    box-sizing: border-box;
+    padding: 12px 26px;
+    border-top: 1px solid #e7eaed;
+    background: #fff;
 }
 
 .inspect-review-link {
@@ -3522,10 +3409,9 @@ body.inspect-open {
 }
 
 .inspect-footer {
-    position: sticky;
-    bottom: 0;
-    padding-top: 15px;
-    background: linear-gradient(to bottom, rgba(255,255,255,0), #fff 14px);
+    min-height: 64px;
+    padding-left: 18px;
+    padding-right: 18px;
 }
 
 @media (max-width: 1100px) {
@@ -3732,8 +3618,14 @@ body.inspect-open {
 
 .review-special-fields {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 140px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
+}
+
+/* Utility used by the review/reclassification UI. Use the native hidden
+   attribute semantics consistently when the UI toggles this class. */
+.hidden {
+    display: none !important;
 }
 
 .review-standalone-fields .form-field {
@@ -3747,14 +3639,51 @@ body.inspect-open {
     box-sizing: border-box;
 }
 
-/* Keep the inspect drawer's footer above the global run status bar. */
-.inspect-panel {
-    height: calc(100% - 42px);
-    margin-bottom: 42px;
+/* v17: reclassification controls for blocked/ignored files. */
+.inspect-reclassify {
+    margin-top: 24px;
+    padding: 18px;
+    border: 1px solid var(--border, #d9e0e7);
+    border-radius: 12px;
+    background: var(--surface-subtle, #f7f9fb);
 }
 
-@media (max-width: 720px) {
-    .review-special-fields {
-        grid-template-columns: 1fr;
-    }
+.inspect-reclassify-heading {
+    margin-bottom: 16px;
+}
+
+.inspect-reclassify-heading p {
+    margin: 5px 0 0;
+}
+
+.inspect-reclassify .form-field {
+    margin-bottom: 14px;
+}
+
+.inspect-reclassify-preview {
+    margin-top: 8px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #d9e0e7);
+}
+
+.inspect-reclassify-preview span {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: var(--text-muted, #73808c);
+}
+
+.inspect-reclassify-preview code {
+    overflow-wrap: anywhere;
+}
+
+.inspect-reclassify-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 14px;
 }
