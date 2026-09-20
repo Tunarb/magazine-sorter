@@ -6,8 +6,10 @@
   <Network>bridge</Network>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
+  <Icon>https://raw.githubusercontent.com/Tunarb/magazine-sorter/main/unraid/magazine-sorter.png</Icon>
   <Support>https://github.com/Tunarb/magazine-sorter</Support>
   <Project>https://github.com/Tunarb/magazine-sorter</Project>
+  <TemplateURL>https://raw.githubusercontent.com/Tunarb/magazine-sorter/main/unraid/magazine-sorter.xml</TemplateURL>
   <Overview>Conservative magazine PDF organizer with Dry Run, Review, OCR, Apply, History and safe Undo.</Overview>
   <Category>MediaApp:Tools:Other</Category>
   <WebUI>http://[IP]:[PORT:8000]/</WebUI>
