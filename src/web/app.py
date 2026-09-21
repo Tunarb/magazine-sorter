@@ -10,6 +10,7 @@ import re
 import uuid
 from difflib import SequenceMatcher
 from typing import Dict, List, Optional, Set
+from urllib.parse import quote
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
@@ -782,6 +783,41 @@ def _sha256_file(path, chunk_size=1024 * 1024):
     return digest.hexdigest()
 
 
+def _file_preview_url(path):
+    """Build a safe preview URL for a file inside the configured input folder."""
+    try:
+        input_root = _current_input_folder().resolve()
+        relative = Path(path).resolve().relative_to(input_root)
+    except (OSError, ValueError):
+        return None
+    return f"/api/file?path={quote(relative.as_posix(), safe='')}"
+
+
+def _resolve_preview_path(relative_path):
+    """Resolve a preview path while preventing access outside the input folder."""
+    if not relative_path:
+        raise HTTPException(status_code=400, detail="File path is required.")
+
+    input_root = _current_input_folder().resolve()
+    candidate = (input_root / Path(relative_path)).resolve()
+
+    try:
+        candidate.relative_to(input_root)
+    except ValueError:
+        raise HTTPException(
+            status_code=403,
+            detail="File is outside the configured input folder",
+        )
+
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    if candidate.suffix.lower() not in {".pdf", ".cbz"}:
+        raise HTTPException(status_code=415, detail="Preview is only available for PDF and CBZ files.")
+
+    return candidate
+
+
 def build_collision_details(files, collisions):
     """Build lightweight side-by-side evidence for blocked collision groups.
 
@@ -803,13 +839,15 @@ def build_collision_details(files, collisions):
                 "size": None,
                 "sha256": None,
                 "hash_status": "unavailable",
+                "file_url": None,
             }
             if file is not None:
                 try:
-                    path = Path(file.path)
+                    path = Path(file.path).resolve()
                     detail["size"] = path.stat().st_size
                     detail["sha256"] = _sha256_file(path)
                     detail["hash_status"] = "ok"
+                    detail["file_url"] = _file_preview_url(path)
                 except OSError:
                     pass
             group.append(detail)
@@ -828,6 +866,10 @@ def format_result(item, collision_details=None):
         "publication": result.get("publication"),
         "reason": result.get("reason"),
         "source_type": item.get("source"),
+        "metadata": result.get("metadata") or {},
+        "classification": result.get("classification"),
+        "special_title": result.get("special_title"),
+        "file_url": _file_preview_url(item.get("path")) if item.get("path") else None,
     }
 
     if collision_details and item.get("destination") in collision_details:
@@ -2393,6 +2435,20 @@ async def review_file(index: int):
     )
 
 
+@app.get("/api/file")
+async def preview_file(path: str):
+    """Serve a current-run source file inline for the shared inspector."""
+    resolved = _resolve_preview_path(path)
+    media_type = "application/pdf" if resolved.suffix.lower() == ".pdf" else "application/zip"
+    return FileResponse(
+        path=str(resolved),
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'inline; filename="{resolved.name}"',
+        },
+    )
+
+
 @app.post("/api/review/{index}/ocr")
 async def review_ocr(index: int):
     item = _find_review_item(index)
@@ -2618,7 +2674,12 @@ async def review_classify(index: int, payload: dict):
 
 @app.post("/api/result/reclassify")
 async def result_reclassify(payload: dict):
-    """Reclassify a current BLOCKED or IGNORE result without moving files."""
+    """Reclassify a current result without moving files until Apply.
+
+    This is intentionally available to AUTO, REVIEW, IGNORE and ERROR
+    results so the shared Inspector can correct a classification discovered
+    by looking at the file itself.
+    """
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="Invalid request payload.")
 
@@ -2626,7 +2687,7 @@ async def result_reclassify(payload: dict):
     action = str(payload.get("action") or "").strip().upper()
     if not filename:
         raise HTTPException(status_code=400, detail="Filename is required.")
-    if action not in {"SPECIAL", "STANDALONE"}:
+    if action not in {"NORMAL", "SPECIAL", "STANDALONE"}:
         raise HTTPException(status_code=400, detail="Unsupported reclassification.")
 
     run = get_last_run()
@@ -2646,7 +2707,34 @@ async def result_reclassify(payload: dict):
         raise HTTPException(status_code=404, detail="File not found in current run.")
 
     extension = Path(filename).suffix or ".pdf"
-    if action == "SPECIAL":
+    if action == "NORMAL":
+        publication = str(payload.get("publication") or item.get("result", {}).get("publication") or "").strip()
+        raw_metadata = payload.get("metadata") or item.get("result", {}).get("metadata") or {}
+        metadata = {}
+        for key in ("year", "month", "day", "issue", "week"):
+            value = raw_metadata.get(key)
+            if value in (None, ""):
+                metadata[key] = None
+                continue
+            try:
+                number = int(value)
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail=f"{key.title()} must be a number.")
+            metadata[key] = number
+        if not publication:
+            raise HTTPException(status_code=400, detail="Publication is required for a normal issue.")
+        if not any(value is not None for value in metadata.values()):
+            raise HTTPException(status_code=400, detail="At least one metadata value is required.")
+        destination = get_destination(publication, metadata)
+        if destination in {None, "_REVIEW"}:
+            raise HTTPException(status_code=400, detail="The supplied metadata is not enough to build a safe destination.")
+        decision = {
+            "action": "AUTO",
+            "publication": publication,
+            "metadata": metadata,
+        }
+        message = "Reclassified as a normal issue. No file was moved or renamed."
+    elif action == "SPECIAL":
         publication = str(payload.get("publication") or item.get("result", {}).get("publication") or "").strip()
         title = str(payload.get("title") or "").strip()
         raw_year = payload.get("year")

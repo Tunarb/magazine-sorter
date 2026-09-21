@@ -65,7 +65,8 @@ def classify_file(filename):
 
     # Bekræftede specials/tillæg.
     # Disse må IKKE automatisk navngives som almindelige magasiner.
-    # Senere kan OCR/AI eller manuel behandling bruges til identifikation.
+    # De skal blive i REVIEW, så brugeren kan vælge Special/Standalone
+    # efter at have set indholdet.
     if (
         "mad and bolig gourmet" in lower_name
         or (
@@ -78,19 +79,19 @@ def classify_file(filename):
         )
     ):
         return {
-            "status": "IGNORE",
-            "publication": None,
+            "status": "REVIEW",
+            "publication": publication if publication not in (None, "AMBIGUOUS") else None,
             "metadata": metadata,
-            "reason": "SPECIAL",
+            "reason": "SPECIAL_CANDIDATE",
         }
 
-    # Specials og tillæg ignoreres.
+    # Specials og tillæg skal til Review, ikke Ignore.
     if "tillaeg" in lower_name or "tillæg" in lower_name:
         return {
-            "status": "IGNORE",
-            "publication": None,
+            "status": "REVIEW",
+            "publication": publication if publication not in (None, "AMBIGUOUS") else None,
             "metadata": metadata,
-            "reason": "SPECIAL",
+            "reason": "SPECIAL_CANDIDATE",
         }
 
     # Ukendt publication skal til review.

@@ -3687,3 +3687,631 @@ body.inspect-open {
     gap: 12px;
     margin-top: 14px;
 }
+
+
+/* -------------------------------------------------------------------------
+   Shared file inspector / PDF workspace
+   ------------------------------------------------------------------------- */
+body.inspect-open {
+    overflow: hidden;
+}
+
+.inspect-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    box-sizing: border-box;
+    background: rgba(20, 28, 36, .52);
+    backdrop-filter: blur(2px);
+}
+
+.inspect-panel {
+    width: min(1800px, 96vw);
+    height: min(96vh, 1100px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(31, 41, 51, .14);
+    border-radius: 12px;
+    box-shadow: 0 24px 70px rgba(20, 28, 36, .28);
+}
+
+.inspect-panel-header {
+    flex: 0 0 auto;
+    min-height: 68px;
+    box-sizing: border-box;
+    padding: 14px 18px;
+    border-bottom: 1px solid #e7eaed;
+    background: #fff;
+}
+
+.inspect-panel-header h2 {
+    max-width: min(70vw, 1100px);
+    font-size: 16px;
+}
+
+.inspect-content {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    padding: 0;
+}
+
+.inspect-workspace {
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 2.05fr) minmax(360px, .95fr);
+}
+
+.inspect-preview-pane {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: #222b33;
+    border-right: 1px solid #dfe4e8;
+}
+
+.inspect-preview-toolbar {
+    flex: 0 0 auto;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 14px;
+    box-sizing: border-box;
+    background: #303a42;
+    color: #fff;
+}
+
+.inspect-preview-toolbar .inspect-side-label {
+    margin-bottom: 3px;
+    color: #aeb7bf;
+}
+
+.inspect-preview-toolbar strong {
+    display: block;
+    max-width: 48vw;
+    overflow: hidden;
+    color: #f5f7f8;
+    font-size: 12px;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inspect-preview-actions {
+    flex: 0 0 auto;
+}
+
+.inspect-preview-frame {
+    min-height: 0;
+    flex: 1 1 auto;
+    background: #333d46;
+}
+
+.inspect-preview-frame iframe {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border: 0;
+    background: #fff;
+}
+
+.inspect-preview-empty {
+    height: 100%;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 30px;
+    box-sizing: border-box;
+    color: #aeb7bf;
+    text-align: center;
+}
+
+.inspect-preview-empty h3 {
+    margin: 0;
+    color: #f3f5f6;
+}
+
+.inspect-preview-empty p {
+    max-width: 420px;
+    margin: 0 0 8px;
+    color: #aeb7bf;
+    font-size: 12px;
+}
+
+.inspect-info-pane {
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 18px;
+    background: #fff;
+}
+
+.inspect-section {
+    margin-bottom: 18px;
+}
+
+.inspect-section-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.inspect-section-heading h3 {
+    margin: 2px 0 4px;
+    color: #303a42;
+    font-size: 13px;
+}
+
+.inspect-section-heading p {
+    margin: 0;
+    color: #7b858e;
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.inspect-comparison {
+    margin: 0;
+    gap: 8px;
+}
+
+.inspect-side {
+    padding: 11px;
+}
+
+.inspect-side-value {
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.inspect-details {
+    border-top: 1px solid #e7eaed;
+}
+
+.inspect-detail-row {
+    grid-template-columns: 92px minmax(0, 1fr);
+    padding: 10px 0;
+    gap: 10px;
+}
+
+.inspect-detail-row span {
+    font-size: 10px;
+}
+
+.inspect-detail-row strong {
+    font-size: 11px;
+}
+
+.inspect-filename-section {
+    padding-top: 15px;
+    border-top: 1px solid #e7eaed;
+}
+
+.inspect-filename-badge {
+    flex: 0 0 auto;
+    padding: 4px 7px;
+    border: 1px solid #dfe4e8;
+    border-radius: 999px;
+    background: #f7f9fb;
+    color: #7b858e;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .5px;
+}
+
+.inspect-filename-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.inspect-filename-grid > div {
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid #e1e5e9;
+    border-radius: 7px;
+    background: #fafbfc;
+}
+
+.inspect-filename-grid code {
+    display: block;
+    overflow-wrap: anywhere;
+    color: #45515b;
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.inspect-mini-label {
+    display: block;
+    margin-bottom: 5px;
+    color: #8a939b;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .6px;
+}
+
+.inspect-help-text {
+    margin: 8px 0 0;
+    color: #8a939b;
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.inspect-reclassify {
+    padding-top: 15px;
+    border-top: 1px solid #e7eaed;
+}
+
+.inspect-reclassify .form-field {
+    margin-bottom: 10px;
+}
+
+.inspect-reclassify-preview {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #dfe5ea;
+    border-radius: 7px;
+    background: #f7f9fb;
+}
+
+.inspect-reclassify-preview span {
+    display: block;
+    margin-bottom: 5px;
+    color: #7b858e;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .55px;
+}
+
+.inspect-reclassify-preview code {
+    display: block;
+    overflow-wrap: anywhere;
+    color: #40505d;
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.inspect-reclassify-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.inspect-footer {
+    min-height: 58px;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 9px;
+    padding: 9px 14px;
+    box-sizing: border-box;
+    border-top: 1px solid #e7eaed;
+    background: #fff;
+}
+
+.inspect-review-link {
+    margin-right: auto;
+}
+
+.collision-comparison {
+    margin: 0 0 18px;
+    padding: 12px;
+}
+
+.collision-comparison-header {
+    margin-bottom: 10px;
+}
+
+.collision-file-grid {
+    grid-template-columns: 1fr;
+}
+
+.collision-file-card {
+    padding: 10px;
+}
+
+.collision-file-name {
+    min-height: auto;
+    font-size: 10px;
+}
+
+.collision-file-open {
+    width: 100%;
+    margin-top: 9px;
+}
+
+.collision-file-open.active {
+    border-color: #9fb4f5;
+    background: #f2f5ff;
+    color: #4f6fbd;
+}
+
+.collision-file-unavailable {
+    display: block;
+    margin-top: 9px;
+    color: #9aa2a9;
+    font-size: 9px;
+}
+
+@media (max-width: 1050px) {
+    .inspect-panel {
+        width: 96vw;
+        height: 96vh;
+    }
+
+    .inspect-workspace {
+        grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
+    }
+}
+
+@media (max-width: 760px) {
+    .inspect-backdrop {
+        padding: 8px;
+    }
+
+    .inspect-panel {
+        width: 100%;
+        height: 98vh;
+        border-radius: 9px;
+    }
+
+    .inspect-workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(50vh, 58vh) minmax(0, 1fr);
+    }
+
+    .inspect-preview-pane {
+        border-right: 0;
+        border-bottom: 1px solid #dfe4e8;
+    }
+
+    .inspect-filename-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Keep Review's existing PDF viewer large enough to be useful on desktop. */
+.review-layout {
+    min-height: calc(100vh - 190px);
+}
+
+.review-detail-panel {
+    min-height: 0;
+}
+
+.review-workspace {
+    min-height: 0;
+    height: calc(100vh - 300px);
+    grid-template-columns: minmax(560px, 2.1fr) minmax(330px, .95fr);
+}
+
+.pdf-viewer,
+.pdf-viewer iframe {
+    min-height: 0;
+    height: 100%;
+}
+
+.review-info {
+    min-height: 0;
+}
+
+/* Inspector refinements: keep the modal above the global run-status bar so
+   its footer actions are never clipped while the inspector is open. */
+.inspect-backdrop {
+    z-index: 2000;
+}
+
+.inspect-info-pane {
+    display: flex;
+    flex-direction: column;
+}
+
+.inspect-metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.inspect-metadata-grid .form-field {
+    min-width: 0;
+}
+
+.inspect-reclassify-actions {
+    position: sticky;
+    bottom: -18px;
+    z-index: 4;
+    margin: 12px -2px -18px;
+    padding: 12px 2px 18px;
+    border-top: 1px solid #e7eaed;
+    background: rgba(255, 255, 255, .96);
+    backdrop-filter: blur(5px);
+}
+
+/* Review: give the PDF and decision panel substantially more room on desktop,
+   while retaining the existing Review queue and controls. */
+.review-layout {
+    grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.review-detail-panel {
+    min-height: calc(100vh - 220px);
+    display: flex;
+    flex-direction: column;
+}
+
+.review-workspace {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 620px;
+    grid-template-columns: minmax(0, 2.15fr) minmax(360px, .95fr);
+}
+
+.pdf-viewer,
+.pdf-viewer iframe {
+    height: 100%;
+    min-height: 620px;
+}
+
+@media (max-width: 1050px) {
+    .inspect-metadata-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .review-workspace {
+        grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
+    }
+}
+
+
+/* -------------------------------------------------------------------------
+   Inspector / Review polish v3
+   ------------------------------------------------------------------------- */
+
+/* The Inspector is a true modal workspace. Keep its own footer above the
+   global run-status bar and never let the footer get clipped. */
+body.inspect-open {
+    overflow: hidden;
+}
+
+.inspect-backdrop {
+    inset: 0;
+    z-index: 2000;
+    padding: 12px;
+}
+
+.inspect-panel {
+    width: min(1800px, 97vw);
+    height: min(96vh, 1100px);
+    max-height: calc(100vh - 24px);
+}
+
+.inspect-content {
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.inspect-workspace {
+    min-height: 0;
+}
+
+.inspect-info-pane {
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+.inspect-reclassify {
+    padding-bottom: 4px;
+}
+
+.inspect-reclassify-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 8;
+    margin: 16px -18px -18px;
+    padding: 12px 18px 14px;
+    border-top: 1px solid #e7eaed;
+    background: rgba(255, 255, 255, .98);
+    box-shadow: 0 -4px 12px rgba(31, 41, 51, .06);
+    backdrop-filter: blur(6px);
+}
+
+.inspect-footer {
+    position: relative;
+    z-index: 9;
+    min-height: 62px;
+    padding: 10px 18px;
+    box-sizing: border-box;
+}
+
+.inspect-footer .button {
+    flex: 0 0 auto;
+}
+
+/* Review gets a real desktop workspace instead of a fixed 620px PDF area. */
+.review-layout {
+    min-height: calc(100vh - 190px);
+    height: calc(100vh - 190px);
+}
+
+.review-detail-panel {
+    min-height: 0;
+    height: 100%;
+}
+
+.review-workspace {
+    min-height: 0;
+    height: 100%;
+}
+
+.pdf-viewer,
+.pdf-viewer iframe {
+    min-height: 0;
+    height: 100%;
+}
+
+.review-info {
+    min-height: 0;
+    overflow-y: auto;
+}
+
+@media (max-width: 1050px) {
+    .review-layout {
+        height: auto;
+        min-height: calc(100vh - 190px);
+    }
+
+    .review-detail-panel {
+        height: auto;
+    }
+
+    .review-workspace {
+        height: auto;
+        min-height: 0;
+    }
+
+    .pdf-viewer,
+    .pdf-viewer iframe {
+        min-height: 62vh;
+        height: 62vh;
+    }
+}
+
+@media (max-width: 700px) {
+    .inspect-backdrop {
+        padding: 6px;
+    }
+
+    .inspect-panel {
+        width: 100%;
+        height: calc(100vh - 12px);
+        max-height: calc(100vh - 12px);
+    }
+
+    .inspect-workspace {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(50vh, 58vh) minmax(0, 1fr);
+    }
+
+    .inspect-footer {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}

@@ -735,6 +735,14 @@ function renderCollisionComparison(collision) {
                 <div class="collision-file-name" title="${escapeHtml(file.filename || "")}">${escapeHtml(file.filename || "—")}</div>
                 <div class="collision-file-meta">SHA-256</div>
                 <code class="collision-file-hash" title="${escapeHtml(hash)}">${escapeHtml(hash)}</code>
+                ${file.file_url ? `
+                    <button
+                        class="button secondary button-small collision-file-open${index === 0 ? " active" : ""}"
+                        type="button"
+                        data-file-url="${escapeHtml(file.file_url)}"
+                        data-filename="${escapeHtml(file.filename || "")}"
+                    >View this PDF</button>
+                ` : `<span class="collision-file-unavailable">Preview unavailable</span>`}
             </div>
         `;
     }).join("");
@@ -758,6 +766,42 @@ function renderCollisionComparison(collision) {
 }
 
 
+function PathExtension(filename) {
+    const value = String(filename || "");
+    const match = value.match(/(\\.[^.\\/]+)$/);
+    return match ? match[1] : "";
+}
+
+function suggestSpecialTitle(filename, publication) {
+    let title = String(filename || "").replace(/\.[^.]+$/, "").trim();
+    const pub = String(publication || "").trim();
+
+    title = title.replace(/^\d{4}[._-]\d{1,2}\s*/i, "").trim();
+
+    if (pub) {
+        const variants = [pub, pub.replace(/\bog\b/gi, "and"), pub.replace(/\band\b/gi, "og")];
+        for (const variant of [...new Set(variants)]) {
+            const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const pubPattern = new RegExp(`^${escaped}\\s*[-–—:._]?\\s*`, "i");
+            const candidate = title.replace(pubPattern, "").trim();
+            if (candidate !== title) {
+                title = candidate;
+                break;
+            }
+        }
+    }
+
+    title = title
+        .replace(/\s*[-–—]\s*\d{1,2}[.-]\d{1,2}[.-]\d{4}.*$/i, "")
+        .replace(/\s+20\d{2}\s*$/i, "")
+        .replace(/[_]+/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .replace(/^[-–—:]+|[-–—:]+$/g, "")
+        .trim();
+
+    return title || String(filename || "").replace(/\.[^.]+$/, "").trim();
+}
+
 function openInspect(result) {
     const backdrop = document.querySelector("#inspect-backdrop");
     const content = document.querySelector("#inspect-content");
@@ -770,49 +814,104 @@ function openInspect(result) {
     const sourceType = result.source_type || "Unknown";
     const reason = result.reason || "No additional reason recorded.";
     const collision = result.collision;
-    const canReclassify = status === "BLOCKED" || status === "IGNORE";
+    const canReclassify = status !== "ERROR" && status !== "APPLIED";
     const publication = String(result.publication || "").trim();
     const filename = String(result.source || "").trim();
+    const fileUrl = result.file_url || "";
+    const metadata = result.metadata || {};
+    const currentClassification = String(result.classification || "").toUpperCase();
+    const isPdf = PathExtension(filename).toLowerCase() === ".pdf";
+    const destinationFilename = destination.includes("/")
+        ? destination.slice(destination.lastIndexOf("/") + 1)
+        : destination;
+    const hasFilenameUpgrade = destinationFilename
+        && destinationFilename !== "No destination proposed"
+        && destinationFilename !== filename;
 
-    label.textContent = resultStatusLabel(status);
-    title.textContent = result.source || "File details";
-
-    const collisionBlock = collision ? renderCollisionComparison(collision) : "";
-
+    const specialCandidate = String(reason || "").toUpperCase().startsWith("SPECIAL_CANDIDATE");
+    const inferredClassification = currentClassification === "SPECIAL"
+        ? "SPECIAL"
+        : currentClassification === "STANDALONE"
+            ? "STANDALONE"
+            : specialCandidate
+                ? "SPECIAL"
+                : "ISSUE";
+    const suggestedSpecialTitle = String(result.special_title || suggestSpecialTitle(filename, publication)).trim();
+    const suggestedYear = metadata.year ?? "";
     const reviewLink = status === "REVIEW"
         ? `<a class="button primary inspect-review-link" href="/review">Open Review</a>`
         : "";
 
+    label.textContent = resultStatusLabel(status);
+    title.textContent = result.source || "File details";
+
     const reclassifyBlock = canReclassify ? `
-        <section class="inspect-reclassify">
-            <div class="inspect-reclassify-heading">
+        <section class="inspect-section inspect-reclassify">
+            <div class="inspect-section-heading">
                 <div>
-                    <div class="inspect-side-label">RECLASSIFY</div>
-                    <p>Change this file's classification without moving or renaming it yet.</p>
+                    <div class="inspect-side-label">CLASSIFICATION</div>
+                    <h3>Correct what Magazine Sorter thinks this file is</h3>
+                    <p>The current parser/OCR suggestion is pre-filled. You can change it here without moving or renaming the file until Apply Changes.</p>
                 </div>
             </div>
 
             <div class="form-field">
                 <label for="inspect-reclassify-type">Classification</label>
                 <select id="inspect-reclassify-type">
-                    <option value="SPECIAL">Special</option>
-                    <option value="STANDALONE">Standalone</option>
+                    <option value="ISSUE" ${inferredClassification === "ISSUE" ? "selected" : ""}>Normal issue</option>
+                    <option value="SPECIAL" ${inferredClassification === "SPECIAL" ? "selected" : ""}>Special</option>
+                    <option value="STANDALONE" ${inferredClassification === "STANDALONE" ? "selected" : ""}>Standalone</option>
                 </select>
                 <div class="publication-type-hint">Specials stay in the publication folder. Standalone files use Komga's <code>_oneshots</code> directory convention.</div>
             </div>
 
-            <div id="inspect-special-fields">
+            <div id="inspect-publication-fields">
                 <div class="form-field">
                     <label for="inspect-publication">Publication</label>
-                    <input id="inspect-publication" type="text" value="${escapeHtml(publication)}" placeholder="e.g. Isabellas">
+                    <select id="inspect-publication">
+                        <option value="${escapeHtml(publication)}" selected>${escapeHtml(publication || "Select publication...")}</option>
+                    </select>
                 </div>
+                <div id="inspect-custom-publication" class="form-field hidden">
+                    <label for="inspect-custom-publication-input">Publication name</label>
+                    <input id="inspect-custom-publication-input" type="text" value="" placeholder="e.g. My Magazine">
+                </div>
+                <div id="inspect-normal-fields">
+                    <div class="inspect-metadata-grid">
+                        <div class="form-field">
+                            <label for="inspect-year">Year</label>
+                            <input id="inspect-year" type="number" min="1900" max="2100" value="${escapeHtml(String(metadata.year ?? ""))}" placeholder="e.g. 2022">
+                        </div>
+                        <div class="form-field">
+                            <label for="inspect-issue">Issue</label>
+                            <input id="inspect-issue" type="number" min="1" max="9999" value="${escapeHtml(String(metadata.issue ?? ""))}" placeholder="e.g. 03">
+                        </div>
+                        <div class="form-field">
+                            <label for="inspect-month">Month</label>
+                            <input id="inspect-month" type="number" min="1" max="12" value="${escapeHtml(String(metadata.month ?? ""))}" placeholder="e.g. 2">
+                        </div>
+                        <div class="form-field">
+                            <label for="inspect-day">Day</label>
+                            <input id="inspect-day" type="number" min="1" max="31" value="${escapeHtml(String(metadata.day ?? ""))}" placeholder="e.g. 15">
+                        </div>
+                        <div class="form-field">
+                            <label for="inspect-week">Week</label>
+                            <input id="inspect-week" type="number" min="1" max="53" value="${escapeHtml(String(metadata.week ?? ""))}" placeholder="e.g. 08">
+                        </div>
+                    </div>
+                    <div class="publication-type-hint" id="inspect-profile-hint">The existing metadata suggestion is pre-filled. The publication profile decides which values are used for the destination.</div>
+                </div>
+            </div>
+
+            <div id="inspect-special-fields" hidden>
                 <div class="form-field">
                     <label for="inspect-special-title">Special title</label>
-                    <input id="inspect-special-title" type="text" value="" placeholder="e.g. Efterårs- og vinterhaven">
+                    <input id="inspect-special-title" type="text" value="${escapeHtml(suggestedSpecialTitle)}" placeholder="e.g. Efterårs- og vinterhaven">
+                    <div class="publication-type-hint">Suggested from the filename. Edit it if the cover shows a different title.</div>
                 </div>
                 <div class="form-field">
                     <label for="inspect-special-year">Year <span class="optional-label">Optional</span></label>
-                    <input id="inspect-special-year" type="number" min="1900" max="2100" placeholder="e.g. 2022">
+                    <input id="inspect-special-year" type="number" min="1900" max="2100" value="${escapeHtml(String(suggestedYear))}" placeholder="e.g. 2022">
                 </div>
             </div>
 
@@ -825,14 +924,104 @@ function openInspect(result) {
 
             <div class="inspect-reclassify-preview">
                 <span>PROPOSED DESTINATION</span>
-                <code id="inspect-reclassify-destination">Enter the required details</code>
+                <code id="inspect-reclassify-destination">Complete the classification</code>
             </div>
             <div class="inspect-reclassify-actions">
-                <button class="button primary" type="button" id="inspect-reclassify-button">Reclassify</button>
+                <button class="button primary" type="button" id="inspect-reclassify-button">Save classification</button>
                 <span class="form-message" id="inspect-reclassify-message"></span>
             </div>
         </section>
     ` : "";
+
+    const collisionBlock = collision ? renderCollisionComparison(collision) : "";
+
+    const filenameUpgradeBlock = `
+        <section class="inspect-section inspect-filename-section">
+            <div class="inspect-section-heading">
+                <div>
+                    <div class="inspect-side-label">FILENAME</div>
+                    <h3>Current vs. proposed name</h3>
+                </div>
+                <span class="inspect-filename-badge">${hasFilenameUpgrade ? "NAME CHANGE" : "UNCHANGED"}</span>
+            </div>
+            <div class="inspect-filename-grid">
+                <div>
+                    <span class="inspect-mini-label">CURRENT</span>
+                    <code>${escapeHtml(filename || "—")}</code>
+                </div>
+                <div>
+                    <span class="inspect-mini-label">PROPOSED</span>
+                    <code>${escapeHtml(hasFilenameUpgrade ? destinationFilename : (destinationFilename || filename || "—"))}</code>
+                </div>
+            </div>
+            <p class="inspect-help-text">Filename cleanup stays a separate, deliberate step. This view only shows the name Magazine Sorter currently proposes.</p>
+        </section>
+    `;
+
+    content.innerHTML = `
+        <div class="inspect-workspace">
+            <section class="inspect-preview-pane">
+                <div class="inspect-preview-toolbar">
+                    <div>
+                        <div class="inspect-side-label">FILE PREVIEW</div>
+                        <strong id="inspect-preview-name">${escapeHtml(filename || "Preview")}</strong>
+                    </div>
+                    <div class="inspect-preview-actions">
+                        ${fileUrl ? `<a class="button secondary button-small" href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener">Open in tab</a>` : ""}
+                    </div>
+                </div>
+                <div class="inspect-preview-frame">
+                    ${fileUrl && isPdf ? `
+                        <iframe id="inspect-pdf-frame" src="${escapeHtml(fileUrl)}#zoom=page-width" title="PDF preview"></iframe>
+                    ` : fileUrl ? `
+                        <div class="inspect-preview-empty">
+                            <div class="empty-icon">◫</div>
+                            <h3>Preview not available</h3>
+                            <p>Browser preview is currently available for PDF files.</p>
+                            <a class="button secondary" href="${escapeHtml(fileUrl)}" target="_blank" rel="noopener">Open file</a>
+                        </div>
+                    ` : `
+                        <div class="inspect-preview-empty">
+                            <div class="empty-icon">◫</div>
+                            <h3>Preview unavailable</h3>
+                            <p>The source file is no longer available at its original location.</p>
+                        </div>
+                    `}
+                </div>
+            </section>
+
+            <aside class="inspect-info-pane">
+                <div class="inspect-status-line">
+                    <span class="result-table-status ${String(status).toLowerCase()}">${escapeHtml(resultStatusLabel(status))}</span>
+                    <span>${escapeHtml(sourceType)}</span>
+                </div>
+
+                <section class="inspect-section">
+                    <div class="inspect-comparison">
+                        <div class="inspect-side original">
+                            <div class="inspect-side-label">ORIGINAL FILE</div>
+                            <div class="inspect-side-value">${escapeHtml(result.source || "—")}</div>
+                        </div>
+                        <div class="inspect-side proposed">
+                            <div class="inspect-side-label">PROPOSED DESTINATION</div>
+                            <div class="inspect-side-value">${escapeHtml(destination)}</div>
+                        </div>
+                    </div>
+                </section>
+
+                ${collisionBlock}
+
+                <section class="inspect-section inspect-details">
+                    <div class="inspect-detail-row"><span>Publication</span><strong>${escapeHtml(result.publication || "—")}</strong></div>
+                    <div class="inspect-detail-row"><span>Detected by</span><strong>${escapeHtml(sourceType)}</strong></div>
+                    <div class="inspect-detail-row"><span>Reason</span><strong>${escapeHtml(reason)}</strong></div>
+                </section>
+
+                ${filenameUpgradeBlock}
+                ${reclassifyBlock}
+            </aside>
+        </div>
+    `;
 
     const footer = document.querySelector("#inspect-footer");
     if (footer) {
@@ -842,82 +1031,156 @@ function openInspect(result) {
         `;
     }
 
-    content.innerHTML = `
-        <div class="inspect-status-line">
-            <span class="result-table-status ${String(status).toLowerCase()}">${escapeHtml(resultStatusLabel(status))}</span>
-            <span>${escapeHtml(sourceType)}</span>
-        </div>
-
-        <section class="inspect-comparison">
-            <div class="inspect-side original">
-                <div class="inspect-side-label">ORIGINAL FILE</div>
-                <div class="inspect-side-value">${escapeHtml(result.source || "—")}</div>
-            </div>
-            <div class="inspect-side proposed">
-                <div class="inspect-side-label">PROPOSED DESTINATION</div>
-                <div class="inspect-side-value">${escapeHtml(destination)}</div>
-            </div>
-        </section>
-
-        ${collisionBlock}
-
-        <section class="inspect-details">
-            <div class="inspect-detail-row"><span>Publication</span><strong>${escapeHtml(result.publication || "—")}</strong></div>
-            <div class="inspect-detail-row"><span>Detected by</span><strong>${escapeHtml(sourceType)}</strong></div>
-            <div class="inspect-detail-row"><span>Reason</span><strong>${escapeHtml(reason)}</strong></div>
-        </section>
-
-        ${reclassifyBlock}
-    `;
-
     backdrop.hidden = false;
     document.body.classList.add("inspect-open");
+
     document.querySelector("#inspect-close-bottom")?.addEventListener("click", closeInspect);
+
+    // Collision cards can switch the large preview without closing the inspector.
+    document.querySelectorAll(".collision-file-open").forEach((button) => {
+        button.addEventListener("click", () => {
+            const url = button.dataset.fileUrl || "";
+            const name = button.dataset.filename || "Preview";
+            const frame = document.querySelector("#inspect-pdf-frame");
+            const previewName = document.querySelector("#inspect-preview-name");
+            if (!frame || !url) return;
+            frame.src = `${url}#zoom=page-width`;
+            if (previewName) previewName.textContent = name;
+            document.querySelectorAll(".collision-file-open").forEach((item) => item.classList.remove("active"));
+            button.classList.add("active");
+        });
+    });
 
     if (canReclassify) {
         const typeSelect = document.querySelector("#inspect-reclassify-type");
+        const publicationSelect = document.querySelector("#inspect-publication");
+        const customPublicationField = document.querySelector("#inspect-custom-publication");
+        const customPublicationInput = document.querySelector("#inspect-custom-publication-input");
+        const publicationFields = document.querySelector("#inspect-publication-fields");
+        const normalFields = document.querySelector("#inspect-normal-fields");
         const specialFields = document.querySelector("#inspect-special-fields");
         const standaloneFields = document.querySelector("#inspect-standalone-fields");
         const destinationEl = document.querySelector("#inspect-reclassify-destination");
         const button = document.querySelector("#inspect-reclassify-button");
         const message = document.querySelector("#inspect-reclassify-message");
 
+        const getPublicationName = () => {
+            if (publicationSelect?.value === "__custom__") {
+                return customPublicationInput?.value.trim() || "";
+            }
+            return publicationSelect?.value.trim() || "";
+        };
+
+        const getMetadata = () => {
+            const values = {};
+            ["year", "month", "day", "issue", "week"].forEach((name) => {
+                const value = document.querySelector(`#inspect-${name}`)?.value.trim() || "";
+                values[name] = value === "" ? null : Number(value);
+            });
+            return values;
+        };
+
+        const profileForPublication = () => {
+            const selected = publicationSelect?.selectedOptions?.[0];
+            return selected?.dataset.profileType || "issue";
+        };
+
         const updateReclassifyPreview = () => {
-            const mode = typeSelect?.value || "SPECIAL";
-            if (specialFields) specialFields.hidden = mode !== "SPECIAL";
-            if (standaloneFields) standaloneFields.hidden = mode !== "STANDALONE";
+            const mode = typeSelect?.value || "ISSUE";
+            const isSpecial = mode === "SPECIAL";
+            const isStandalone = mode === "STANDALONE";
+            if (publicationFields) publicationFields.hidden = isStandalone;
+            if (normalFields) normalFields.hidden = isSpecial || isStandalone;
+            if (specialFields) specialFields.hidden = !isSpecial;
+            if (standaloneFields) standaloneFields.hidden = !isStandalone;
             if (!destinationEl) return;
 
-            if (mode === "STANDALONE") {
+            if (isStandalone) {
                 const standaloneFilename = document.querySelector("#inspect-standalone-filename")?.value.trim() || "";
-                destinationEl.textContent = standaloneFilename
-                    ? `_oneshots/${standaloneFilename}`
-                    : "Enter a standalone filename";
+                destinationEl.textContent = standaloneFilename ? `_oneshots/${standaloneFilename}` : "Enter a standalone filename";
                 return;
             }
 
-            const publicationValue = document.querySelector("#inspect-publication")?.value.trim() || "";
-            const titleValue = document.querySelector("#inspect-special-title")?.value.trim() || "";
-            const yearValue = document.querySelector("#inspect-special-year")?.value.trim() || "";
-            if (!publicationValue || !titleValue) {
-                destinationEl.textContent = "Enter publication and Special title";
+            const publicationValue = getPublicationName();
+            if (!publicationValue) {
+                destinationEl.textContent = "Select a publication";
                 return;
             }
-            const extension = PathExtension(filename);
-            const specialFilename = `${publicationValue} - ${yearValue ? yearValue + " - " : ""}${titleValue}${extension}`;
-            destinationEl.textContent = `${publicationValue}/${specialFilename}`;
+
+            if (isSpecial) {
+                const titleValue = document.querySelector("#inspect-special-title")?.value.trim() || "";
+                const yearValue = document.querySelector("#inspect-special-year")?.value.trim() || "";
+                if (!titleValue) {
+                    destinationEl.textContent = "Enter a Special title";
+                    return;
+                }
+                const extension = PathExtension(filename);
+                const specialFilename = `${publicationValue} - ${yearValue ? yearValue + " - " : ""}${titleValue}${extension}`;
+                destinationEl.textContent = `${publicationValue}/${specialFilename}`;
+                return;
+            }
+
+            const values = getMetadata();
+            const profileType = profileForPublication();
+            let proposed = "";
+            if (profileType === "date" && values.year != null && values.month != null && values.day != null) {
+                proposed = `${publicationValue} - ${values.year}-${String(values.month).padStart(2, "0")}-${String(values.day).padStart(2, "0")}${PathExtension(filename)}`;
+            } else if (profileType === "month" && values.year != null && values.month != null) {
+                proposed = `${publicationValue} - ${values.year}-${String(values.month).padStart(2, "0")}${PathExtension(filename)}`;
+            } else if (profileType === "week" && values.year != null && values.week != null) {
+                proposed = `${publicationValue} - ${values.year} - Uge ${String(values.week).padStart(2, "0")}${PathExtension(filename)}`;
+            } else if (values.issue != null) {
+                proposed = `${publicationValue} - ${values.year != null ? values.year + " - " : ""}Nr ${String(values.issue).padStart(2, "0")}${PathExtension(filename)}`;
+            }
+            destinationEl.textContent = proposed ? `${publicationValue}/${proposed}` : "Complete the required metadata";
+        };
+
+        const populatePublications = async () => {
+            try {
+                const response = await fetch("/api/publications", { cache: "no-store" });
+                if (!response.ok) return;
+                const data = await response.json();
+                const items = data.items || [];
+                const current = publication;
+                publicationSelect.innerHTML = `
+                    <option value="">Select known publication...</option>
+                    ${items.map((item) => `
+                        <option value="${escapeHtml(item.name)}" data-profile-type="${escapeHtml(item.type || "issue")}" ${item.name === current ? "selected" : ""}>${escapeHtml(item.name)}</option>
+                    `).join("")}
+                    <option value="__custom__" ${current && !items.some((item) => item.name === current) ? "selected" : ""}>Enter publication manually...</option>
+                `;
+                if (current && !items.some((item) => item.name === current)) {
+                    customPublicationField?.classList.remove("hidden");
+                    if (customPublicationInput) customPublicationInput.value = current;
+                }
+                updateReclassifyPreview();
+            } catch (error) {
+                console.debug("Could not load inspector publications:", error);
+            }
+        };
+
+        const syncCustomPublication = () => {
+            const custom = publicationSelect?.value === "__custom__";
+            customPublicationField?.classList.toggle("hidden", !custom);
+            updateReclassifyPreview();
         };
 
         typeSelect?.addEventListener("change", updateReclassifyPreview);
-        ["#inspect-publication", "#inspect-special-title", "#inspect-special-year", "#inspect-standalone-filename"].forEach((selector) => {
-            document.querySelector(selector)?.addEventListener("input", updateReclassifyPreview);
+        publicationSelect?.addEventListener("change", syncCustomPublication);
+        customPublicationInput?.addEventListener("input", updateReclassifyPreview);
+        ["year", "month", "day", "issue", "week", "special-title", "special-year", "standalone-filename"].forEach((name) => {
+            document.querySelector(`#inspect-${name}`)?.addEventListener("input", updateReclassifyPreview);
         });
 
         button?.addEventListener("click", async () => {
-            const action = typeSelect?.value || "SPECIAL";
-            const payload = { filename, action };
-            if (action === "SPECIAL") {
-                payload.publication = document.querySelector("#inspect-publication")?.value.trim() || "";
+            const action = typeSelect?.value || "ISSUE";
+            const payload = { filename, action: action === "ISSUE" ? "NORMAL" : action };
+            if (action !== "STANDALONE") {
+                payload.publication = getPublicationName();
+            }
+            if (action === "NORMAL") {
+                payload.metadata = getMetadata();
+            } else if (action === "SPECIAL") {
                 payload.title = document.querySelector("#inspect-special-title")?.value.trim() || "";
                 payload.year = document.querySelector("#inspect-special-year")?.value.trim() || null;
             } else {
@@ -927,7 +1190,7 @@ function openInspect(result) {
             button.disabled = true;
             if (message) {
                 message.className = "form-message";
-                message.textContent = "Reclassifying...";
+                message.textContent = "Saving...";
             }
 
             try {
@@ -938,7 +1201,6 @@ function openInspect(result) {
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
-
                 if (message) {
                     message.className = "form-message success";
                     message.textContent = "Saved. No file was moved or renamed.";
@@ -950,19 +1212,16 @@ function openInspect(result) {
                     message.className = "form-message error";
                     message.textContent = error.message;
                 }
+            } finally {
                 button.disabled = false;
             }
         });
 
+        syncCustomPublication();
         updateReclassifyPreview();
+        populatePublications();
     }
 }
-
-function PathExtension(filename) {
-    const match = String(filename || "").match(/\.[^./\\]+$/);
-    return match ? match[0] : ".pdf";
-}
-
 
 function closeInspect() {
     const backdrop = document.querySelector("#inspect-backdrop");
