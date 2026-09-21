@@ -4315,3 +4315,27 @@ body.inspect-open {
         padding-right: 12px;
     }
 }
+
+
+/* Review queue: independent scrolling */
+.review-list-panel {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.review-list-panel > #review-list {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.review-list-panel > #review-list > .review-list {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+}

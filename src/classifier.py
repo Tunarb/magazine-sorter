@@ -77,6 +77,14 @@ def classify_file(filename):
             "isabellas" in lower_name
             and "efterårs- og vinterhaven" in lower_name
         )
+        or (
+            "isabellas" in lower_name
+            and "forars- og sommerhaven" in lower_name
+        )
+        or (
+            "isabellas" in lower_name
+            and "forårs- og sommerhaven" in lower_name
+        )
     ):
         return {
             "status": "REVIEW",

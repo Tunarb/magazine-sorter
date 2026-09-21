@@ -768,7 +768,7 @@ function renderCollisionComparison(collision) {
 
 function PathExtension(filename) {
     const value = String(filename || "");
-    const match = value.match(/(\\.[^.\\/]+)$/);
+    const match = value.match(/(\.[^.\/]+)$/);
     return match ? match[1] : "";
 }
 
