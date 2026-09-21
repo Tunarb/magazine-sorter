@@ -168,21 +168,28 @@ Komga metadata such as book numbers can be adjusted inside Komga after import wh
 
 ### Install from the GitHub template
 
-Magazine Sorter can be installed on Unraid without using Community Applications. The project maintains its own Docker template in this repository.
+Magazine Sorter can be installed on Unraid without using Community Applications. The project maintains its Docker template in this repository.
 
-In **Apps → Add Container**, add the GitHub repository as a custom template repository:
+Unraid stores Docker user templates in `/boot/config/plugins/dockerMan/templates-user`. To install the Magazine Sorter template from GitHub:
 
-```text
-https://github.com/Tunarb/magazine-sorter
+1. Open the **Unraid Terminal**.
+2. Download the template XML directly into the user-template folder:
+
+```bash
+wget -O /boot/config/plugins/dockerMan/templates-user/my-magazine-sorter.xml https://raw.githubusercontent.com/Tunarb/magazine-sorter/main/unraid/magazine-sorter.xml
 ```
 
-Then select **Magazine Sorter** from the available templates. Unraid loads the XML template and pre-fills the container settings.
+3. Go to **Docker → Add Container**.
+4. Select **Magazine Sorter** from the **Template** dropdown.
+5. Review the pre-filled settings and choose your own host paths for `/config`, `/input` and `/library`.
 
 The template includes the project icon, WebUI action and the production image:
 
 ```text
 ghcr.io/tunarb/magazine-sorter:latest
 ```
+
+This method is intentional: Unraid removed the old Template Repositories feature from the Docker workflow, so the supported user-template location is the `templates-user` directory.
 
 The template provides sensible defaults for the container-side settings:
 
