@@ -1174,13 +1174,14 @@ function openInspect(result) {
 
         button?.addEventListener("click", async () => {
             const action = typeSelect?.value || "ISSUE";
-            const payload = { filename, action: action === "ISSUE" ? "NORMAL" : action };
-            if (action !== "STANDALONE") {
+            const normalizedAction = action === "ISSUE" ? "NORMAL" : action;
+            const payload = { filename, action: normalizedAction };
+            if (normalizedAction !== "STANDALONE") {
                 payload.publication = getPublicationName();
             }
-            if (action === "NORMAL") {
+            if (normalizedAction === "NORMAL") {
                 payload.metadata = getMetadata();
-            } else if (action === "SPECIAL") {
+            } else if (normalizedAction === "SPECIAL") {
                 payload.title = document.querySelector("#inspect-special-title")?.value.trim() || "";
                 payload.year = document.querySelector("#inspect-special-year")?.value.trim() || null;
             } else {
