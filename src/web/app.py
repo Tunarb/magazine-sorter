@@ -2709,7 +2709,11 @@ async def result_reclassify(payload: dict):
     extension = Path(filename).suffix or ".pdf"
     if action == "NORMAL":
         publication = str(payload.get("publication") or item.get("result", {}).get("publication") or "").strip()
-        raw_metadata = payload.get("metadata") or item.get("result", {}).get("metadata") or {}
+        raw_metadata = payload.get("metadata")
+        if not isinstance(raw_metadata, dict) or not any(
+            value not in (None, "") for value in raw_metadata.values()
+        ):
+            raw_metadata = item.get("result", {}).get("metadata") or {}
         metadata = {}
         for key in ("year", "month", "day", "issue", "week"):
             value = raw_metadata.get(key)
