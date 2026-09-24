@@ -2449,6 +2449,126 @@ async def preview_file(path: str):
     )
 
 
+@app.post("/api/result/quarantine-duplicate")
+async def quarantine_duplicate(payload: dict):
+    """Move one file from a current collision into the input quarantine.
+
+    This is an explicit, manual operation from the Inspector. It never deletes
+    a file and only accepts files that are currently part of a real collision.
+    After the move, a fresh Dry Run is started so the remaining collision mate
+    can immediately become READY.
+    """
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Invalid request payload.")
+
+    filename = str(payload.get("filename") or "").strip()
+    if not filename:
+        raise HTTPException(status_code=400, detail="Filename is required.")
+
+    run = get_last_run()
+    if run is None:
+        raise HTTPException(status_code=404, detail="No current run available.")
+
+    collision_destination = None
+    collision_filenames = None
+    for destination, filenames in (run.get("collisions") or {}).items():
+        if filename in (filenames or []):
+            collision_destination = destination
+            collision_filenames = list(filenames or [])
+            break
+
+    if not collision_destination or len(collision_filenames or []) < 2:
+        raise HTTPException(
+            status_code=409,
+            detail="This file is not currently part of a collision.",
+        )
+
+    item = None
+    for candidate in run.get("results", {}).get("AUTO", []):
+        if candidate.get("filename") == filename and candidate.get("destination") == collision_destination:
+            item = candidate
+            break
+    if item is None:
+        raise HTTPException(status_code=404, detail="Collision file not found in current run.")
+
+    source = Path(item.get("path") or "").resolve()
+    input_root = _current_input_folder().resolve()
+    try:
+        source.relative_to(input_root)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Source file is outside the configured input folder.")
+
+    if not source.is_file():
+        raise HTTPException(status_code=404, detail="Source file no longer exists.")
+
+    try:
+        relative_source = source.relative_to(input_root)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Source file is outside the configured input folder.")
+    if "_duplicates" in relative_source.parts:
+        raise HTTPException(status_code=409, detail="File is already in the duplicate quarantine.")
+
+    quarantine_root = input_root / "_duplicates"
+    quarantine_root.mkdir(parents=True, exist_ok=True)
+    target = quarantine_root / source.name
+    if target.exists():
+        stem = source.stem
+        suffix = source.suffix
+        counter = 2
+        while True:
+            candidate = quarantine_root / f"{stem} ({counter}){suffix}"
+            if not candidate.exists():
+                target = candidate
+                break
+            counter += 1
+
+    try:
+        shutil.move(str(source), str(target))
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail=f"Could not move file to _duplicates: {exc}")
+
+    # Record the explicit user action before replacing the current run.
+    checkpoint = load_checkpoint()
+    if checkpoint:
+        checkpoint = ensure_checkpoint_identity(checkpoint)
+        events = list(checkpoint_events(checkpoint))
+        events.append(_event(
+            "duplicate_quarantined",
+            "Collision file moved to _duplicates",
+            filename=filename,
+            source=str(source),
+            destination=str(target),
+            collision_destination=collision_destination,
+        ))
+        try:
+            save_checkpoint(
+                _current_input_folder(),
+                checkpoint.get("total", 0),
+                checkpoint_items(checkpoint),
+                status=checkpoint.get("status", "finished"),
+                run_id=checkpoint.get("run_id"),
+                review_decisions=checkpoint_review_decisions(checkpoint),
+                events=events,
+                created_at=checkpoint.get("created_at"),
+                run_type=checkpoint.get("run_type", "dry_run"),
+            )
+            checkpoint = load_checkpoint() or checkpoint
+            _archive_checkpoint(checkpoint, result=run)
+        except OSError:
+            # The file move is already complete. A persistence failure must not
+            # make the UI report that the quarantine failed.
+            pass
+
+    dry_run_result = await dry_run(new_run=True, run_type="dry_run")
+    return {
+        "success": True,
+        "filename": filename,
+        "quarantined_to": str(target),
+        "message": "File moved to _duplicates. A new Dry Run has been started.",
+        "dry_run": dry_run_result,
+    }
+
+
 @app.post("/api/review/{index}/ocr")
 async def review_ocr(index: int):
     item = _find_review_item(index)
@@ -2709,11 +2829,7 @@ async def result_reclassify(payload: dict):
     extension = Path(filename).suffix or ".pdf"
     if action == "NORMAL":
         publication = str(payload.get("publication") or item.get("result", {}).get("publication") or "").strip()
-        raw_metadata = payload.get("metadata")
-        if not isinstance(raw_metadata, dict) or not any(
-            value not in (None, "") for value in raw_metadata.values()
-        ):
-            raw_metadata = item.get("result", {}).get("metadata") or {}
+        raw_metadata = payload.get("metadata") or item.get("result", {}).get("metadata") or {}
         metadata = {}
         for key in ("year", "month", "day", "issue", "week"):
             value = raw_metadata.get(key)

@@ -743,6 +743,11 @@ function renderCollisionComparison(collision) {
                         data-filename="${escapeHtml(file.filename || "")}"
                     >View this PDF</button>
                 ` : `<span class="collision-file-unavailable">Preview unavailable</span>`}
+                <button
+                    class="button secondary button-small collision-file-quarantine"
+                    type="button"
+                    data-filename="${escapeHtml(file.filename || "")}"
+                >Move to _duplicates</button>
             </div>
         `;
     }).join("");
@@ -1051,6 +1056,40 @@ function openInspect(result) {
         });
     });
 
+    document.querySelectorAll(".collision-file-quarantine").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const filename = button.dataset.filename || "";
+            if (!filename) return;
+
+            const confirmed = window.confirm(
+                `Move "${filename}" to _duplicates?\n\nThe file will not be deleted. It will be kept in the duplicate quarantine and excluded from future scans.`
+            );
+            if (!confirmed) return;
+
+            const buttons = document.querySelectorAll(".collision-file-quarantine");
+            buttons.forEach((item) => { item.disabled = true; });
+            button.textContent = "Moving...";
+
+            try {
+                const response = await fetch("/api/result/quarantine-duplicate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ filename }),
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || `HTTP ${response.status}`);
+
+                closeInspect();
+                refreshRunStatus();
+            } catch (error) {
+                console.error("Could not quarantine duplicate:", error);
+                alert(`Could not move the file to _duplicates.\n\n${error.message}`);
+                buttons.forEach((item) => { item.disabled = false; });
+                button.textContent = "Move to _duplicates";
+            }
+        });
+    });
+
     if (canReclassify) {
         const typeSelect = document.querySelector("#inspect-reclassify-type");
         const publicationSelect = document.querySelector("#inspect-publication");
@@ -1174,14 +1213,13 @@ function openInspect(result) {
 
         button?.addEventListener("click", async () => {
             const action = typeSelect?.value || "ISSUE";
-            const normalizedAction = action === "ISSUE" ? "NORMAL" : action;
-            const payload = { filename, action: normalizedAction };
-            if (normalizedAction !== "STANDALONE") {
+            const payload = { filename, action: action === "ISSUE" ? "NORMAL" : action };
+            if (action !== "STANDALONE") {
                 payload.publication = getPublicationName();
             }
-            if (normalizedAction === "NORMAL") {
+            if (action === "NORMAL") {
                 payload.metadata = getMetadata();
-            } else if (normalizedAction === "SPECIAL") {
+            } else if (action === "SPECIAL") {
                 payload.title = document.querySelector("#inspect-special-title")?.value.trim() || "";
                 payload.year = document.querySelector("#inspect-special-year")?.value.trim() || null;
             } else {

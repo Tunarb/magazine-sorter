@@ -24,6 +24,15 @@ def find_magazines(folder):
         if file.suffix.lower() not in SUPPORTED_EXTENSIONS:
             continue
 
+        # Quarantined duplicate files are deliberately kept under the input
+        # tree, but must never re-enter a Dry Run.
+        try:
+            relative = file.relative_to(folder)
+        except ValueError:
+            continue
+        if "_duplicates" in relative.parts:
+            continue
+
         files.append(
             MagazineFile(
                 path=file,
